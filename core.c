@@ -159,8 +159,8 @@ void make_sbox_caches() {
 
 static VALUE cr_c_sbox_block(VALUE self, VALUE str) {
     int i;
-    unsigned char *i_p=RSTRING(str)->ptr;
-    unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(char));
+    char *i_p=RSTRING(str)->ptr;
+    char *p=(char *)malloc(RSTRING(str)->len*sizeof(char));
     for(i=0;i<RSTRING(str)->len;i++) {
         p[i]=sbox_cache[i_p[i]];
     }
@@ -175,8 +175,8 @@ static VALUE cr_c_sbox_block(VALUE self, VALUE str) {
 
 static VALUE cr_c_inverse_sbox_block(VALUE self, VALUE str) {
     int i;
-    unsigned char *i_p=RSTRING(str)->ptr;
-    unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(char));
+    char *i_p=RSTRING(str)->ptr;
+    char *p=(char *)malloc(RSTRING(str)->len*sizeof(char));
     for(i=0;i<RSTRING(str)->len;i++) {
         p[i]=inv_sbox_cache[i_p[i]];
     }
@@ -231,12 +231,12 @@ VALUE cr_c_dot(VALUE self, VALUE a, VALUE b) {
  * readable this way (and we can afford to waste 2-3KB and a second on startup,
  * can't we?)
  */
-unsigned char *dot_cache[0xf];
+char *dot_cache[0xf];
 
-unsigned char **make_dot_cache() {
+char **make_dot_cache() {
     int i,j;
     for(i=0;i<0x10;i++) {
-        dot_cache[i]=(char *)malloc(256*sizeof(unsigned char));
+        dot_cache[i]=(char *)malloc(256*sizeof(char));
         for(j=0;j<0x100;j++) {
             dot_cache[i][j]=dot(i,j);
         }
@@ -255,7 +255,7 @@ unsigned char **make_dot_cache() {
  *
  * This is the part of the cipher that performs "bit diffusion".
  */
-unsigned char *mix_columns(unsigned char *in_block, unsigned char block_words) {
+char *mix_columns(char *in_block, unsigned char block_words) {
     unsigned char t_column[COLUMN_SIZE];
     int i;
     for(i=0;i<block_words*COLUMN_SIZE;i+=COLUMN_SIZE) {
@@ -283,7 +283,7 @@ unsigned char *mix_columns(unsigned char *in_block, unsigned char block_words) {
 /*
  * As with mix_columns() except it uses an inverted matrix.
  */
-unsigned char *inverse_mix_columns(unsigned char *in_block, unsigned char block_words) {
+char *inverse_mix_columns(char *in_block, unsigned char block_words) {
     unsigned char t_column[COLUMN_SIZE];
     int i;
     for(i=0;i<block_words*COLUMN_SIZE;i+=COLUMN_SIZE) {
