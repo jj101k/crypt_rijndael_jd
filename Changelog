@@ -1,3 +1,5 @@
+	- Allow local testing
+	- Always cache
 0.6
 	- Trivial change to fix copyright notice
 	- Changelog added
