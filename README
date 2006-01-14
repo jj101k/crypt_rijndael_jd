@@ -1,0 +1,33 @@
+USAGE
+
+This package requires Ruby 1.8. There isn't any technical reason why it can't run on Ruby 1.6, and 
+anyone who wants to try backporting it is welcome to do so, but I encountered some very odd problems
+trying to do so.
+
+Usage is pretty simple:
+
+require 'crypt/rijndael'
+key="xxxxxxxxxxxxxxxx"
+cipher=Crypt::Rijndael.new(key)
+plaintext="hello world....."
+ciphertext=cipher.encrypt(plaintext)
+plaintext=cipher.decrypt(ciphertext)
+
+Some things to note, though:
+- This is a block encryption cipher, only encrypting to blocks of particular sizes. If you try to put
+text in that is not of the correct block size, it will refuse it.
+- Key generation is outside the scope of this module - please be sure to generate suitably random keys
+from a reliable random source. Encrypting to a predictable key is not sensible.
+- Crypt::AES is a subclass of Crypt::Rijndael, the only difference being that it only supports one block
+ size(128 bit)
+- There is a simple PKCS#5-padded CBC implementation here. If you're not using data that fits exactly into a block size, you should use this as follows:
+iv="01234556789abcdef"
+ciphertext=cipher.encrypt_CBC(iv, "hello world")
+puts cipher.decrypt_CBC(iv, ciphertext)
+
+Note that the initialisation vector (IV) doesn't need to be pure-random, but you probably want it to be unique as it helps prevent (partially) identical messages from having (partially) identical ciphertexts. Block chaining is outside the scope of this module really; the methods above are provided only for convenience. Note that this functionality is compatible with OpenSSL in aes-*-cbc mode with a specific IV and key.
+
+COPYRIGHT
+
+This files in this distribution (with the exception of bwulf10.txt) are
+copyright 2005 Jim Driscoll <jim@RJimLad.org.uk>; please see the included file COPYING for details.

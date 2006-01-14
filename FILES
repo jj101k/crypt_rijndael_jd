@@ -1,0 +1,24 @@
+README.FIRST:
+	Stuff to be read before you consider doing anything.
+FILES:
+	This file.
+INSTALL:
+	Installation instructions
+README:
+	Usage instructions and extra information
+bwulf10.txt:
+	A sample file (for testing encryption)
+core.c:
+	The C core
+core.rb:
+	The (alternate) ruby core
+extconf.rb:
+	Script to build the makefile. Use install.rb instead.
+install-pr.rb:
+	Script to install the pure-ruby core. Use install.rb instead.
+install.rb:
+	Master installer script. See INSTALL
+rijndael.rb:
+	The main class definitions
+test.rb:
+	A test script, suitable for running after install.
