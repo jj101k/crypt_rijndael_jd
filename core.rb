@@ -184,6 +184,7 @@ class Crypt
                         @@dot_cache[a][b]=dot(a, b)
                     end
                 end
+								@@all_cached=1
             end
 
         end
