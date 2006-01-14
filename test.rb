@@ -1,4 +1,5 @@
 #!/usr/bin/ruby -w
+require "./core"
 require "./rijndael"
 
 puts "Testing simplest possible encryption"

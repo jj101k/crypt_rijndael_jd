@@ -25,7 +25,11 @@ iv="01234556789abcdef"
 ciphertext=cipher.encrypt_CBC(iv, "hello world")
 puts cipher.decrypt_CBC(iv, ciphertext)
 
-Note that the initialisation vector (IV) doesn't need to be pure-random, but you probably want it to be unique as it helps prevent (partially) identical messages from having (partially) identical ciphertexts. Block chaining is outside the scope of this module really; the methods above are provided only for convenience. Note that this functionality is compatible with OpenSSL in aes-*-cbc mode with a specific IV and key.
+NOTES
+
+The initialisation vector (IV) doesn't need to be pure-random, but you probably want it to be unique as it helps prevent (partially) identical messages from having (partially) identical ciphertexts. Block chaining is outside the scope of this module really; the methods above are provided only for convenience. Note that this functionality is compatible with OpenSSL in aes-*-cbc mode with a specific IV and key.
+
+If you "build" the pure-ruby core, it'll always be what the test script uses.
 
 COPYRIGHT
 

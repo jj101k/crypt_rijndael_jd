@@ -1,5 +1,8 @@
 require "bytestream"
-require "crypt/rijndael/core"
+# This is to help testing
+unless(defined? Crypt::Rijndael::Core)
+	require "crypt/rijndael/core"
+end
 
 class Crypt
     class Rijndael

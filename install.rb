@@ -13,6 +13,7 @@ loop do
 			require "./extconf.rb"
 			exit
 	elsif(answer=~/^r/i)
+			File.copy("pr-core.rb", "core.rb")
 			require "./install-pr.rb"
 			exit
 	end
