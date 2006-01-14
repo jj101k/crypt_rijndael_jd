@@ -1,9 +1,10 @@
 #!/usr/bin/ruby -w
-require "crypt/rijndael"
+require "./rijndael"
 
-puts "Setting up caching..."
-Crypt::Rijndael.make_shiftrow_map
-puts "Done"
+puts "Testing simplest possible encryption"
+cipher=Crypt::Rijndael.new("1"*16)
+raise unless cipher.encrypt("2"*16)
+puts "Ok"
 
 input, rkey=[
 	0x32, 0x88, 0x31, 0xe0,

@@ -111,6 +111,8 @@ high importance for you.
             end
         end
         
+        make_shiftrow_map
+        
         def shift_rows(state_b) #:nodoc:
           row_len=state_b.length/4
           
