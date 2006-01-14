@@ -86,8 +86,6 @@ high importance for you.
                     d2=Array.new
                     (row_len-c[row_n] .. row_len-1).map {|col| row_n+col_len*col}.each do
                         |offset|
-                        #p offset
-                        #p state_b[offset,1]
                         d1+=state_b[offset,1]
                     end 
                     (0 .. row_len-c[row_n]-1).map {|col| row_n+col_len*col}.each do
@@ -95,10 +93,7 @@ high importance for you.
                         d2+=state_b[offset,1]
                     end  
                     
-            
-                    #warn join("  ", map {$row_n+$col_len*$_} (0 .. $row_len-1));
-                    #warn (scalar @d);
-                    (0 .. row_len-1).map {|col| row_n+col_len*col}.each do
+            	(0 .. row_len-1).map {|col| row_n+col_len*col}.each do
                         |offset|
                         state_b[offset]=d1.shift||d2.shift
                     end
@@ -116,93 +111,22 @@ high importance for you.
         def shift_rows(state_b) #:nodoc:
           row_len=state_b.length/4
           
-          if(defined? @@shiftrow_map)
-            #state_o=state_b.dup
-            #i=0
-            state_o=@@shiftrow_map[row_len].map do
-                |offset|
-                state_b[offset]
-            end
-            return state_o.pack("C*")
-          end      
-              
-          col_len=4
-          
-          state_o=state_b.dup
-          
-          #puts row_len
-          c=@@shift_for_block_len[row_len];
-          (0 .. c.length-1).each do
-            |row_n|
-            # Grab the lossage first
-            next unless c[row_n] > 0;
-        
-            d1=Array.new
-            #d1=state_b[
-                (0 .. c[row_n]-1).map { |col| row_n+col_len*col}.each do
-                    |offset|
-                    d1+=state_b[offset,1]
-                end 
-            #];
-            d2=Array.new
-            #d2=state_b[
-                (c[row_n] .. row_len-1).map { |col| row_n+col_len*col}.each do
-                    |offset|
-                    d2+=state_b[offset,1]                
-                end 
-            #];
-        
-            
-            #warn join("  ", map {$row_n+$col_len*$_} (0 .. $row_len-1));
-            #warn (scalar @d);
-            (0 .. row_len-1).map { |col| row_n+col_len*col}.each do
-                |offset|
-                state_o[offset]=d2.shift||d1.shift
-            end
-            #state_b[ ] = d2+d1;
-            
-          end
-          return state_o
+		  state_o=@@shiftrow_map[row_len].map do
+				|offset|
+				state_b[offset]
+		  end
+		  return state_o.pack("C*")
         end
         
         def inv_shift_rows(state_b) #:nodoc:
           col_len=4;
           row_len=state_b.length/4;
           
-          if(defined? @@inv_shiftrow_map) 
             state_o=@@inv_shiftrow_map[row_len].map do
                 |offset|
                 state_b[offset]
             end
             return state_o.pack("C*")
-          end  
-          
-          c=@@shift_for_block_len[state_b.length/4];
-          for row_n in (0 .. c.length-1) 
-            # Grab the lossage first
-            next unless c[row_n] > 0;
-        
-            d1=Array.new
-            (row_len-c[row_n] .. row_len-1).map { |col| row_n+col_len*col}.each do 
-                |offset|
-                d1+=state_b[offset,1]
-            end
-            d2=Array.new
-            (0 .. row_len-c[row_n]-1).map { |col| row_n+col_len*col}.each do
-                |offset|
-                d2+=state_b[offset,1]
-            end
-        
-            
-            #warn join("  ", map {$row_n+$col_len*$_} (0 .. $row_len-1));
-            #warn (scalar @d);
-            (0 .. row_len-1).map {|col| row_n+col_len*col}.each do
-                |offset|
-                state_b[offset]=d1.shift||d2.shift
-            end
-            
-          end
-          return state_b;
         end
         
         def round0(input, round_key) #:nodoc:
