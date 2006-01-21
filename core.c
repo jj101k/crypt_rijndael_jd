@@ -133,6 +133,20 @@ unsigned char sbox(unsigned char b) {
     return result^c;
 }
 
+ /*
+ * 'sbox' stands for 'Substitution box' here. This is the part of the cipher
+ * that tries to ensure that the output doesn't have bytes in common with the
+ * input.
+ *
+ * Don't use this function. It's here for debugging purposes.
+ */ 
+
+static VALUE cr_c_sbox(VALUE self, VALUE b) {
+       unsigned char b_int=(unsigned char)NUM2INT(b);
+       b_int=sbox(b_int);
+       return INT2FIX(b_int);
+}
+
 /*
  * Caches because the above functions take an age (in CPU operations terms)
  * to do. And hey, we can spare 520-528 bytes, right? Of course we can.
@@ -159,8 +173,8 @@ void make_sbox_caches() {
 
 static VALUE cr_c_sbox_block(VALUE self, VALUE str) {
     int i;
-    char *i_p=RSTRING(str)->ptr;
-    char *p=(char *)malloc(RSTRING(str)->len*sizeof(char));
+    unsigned char *i_p=(unsigned char *)RSTRING(str)->ptr;
+    unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(unsigned char));
     for(i=0;i<RSTRING(str)->len;i++) {
         p[i]=sbox_cache[i_p[i]];
     }
@@ -175,8 +189,8 @@ static VALUE cr_c_sbox_block(VALUE self, VALUE str) {
 
 static VALUE cr_c_inverse_sbox_block(VALUE self, VALUE str) {
     int i;
-    char *i_p=RSTRING(str)->ptr;
-    char *p=(char *)malloc(RSTRING(str)->len*sizeof(char));
+    unsigned char *i_p=RSTRING(str)->ptr;
+    unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(unsigned char));
     for(i=0;i<RSTRING(str)->len;i++) {
         p[i]=inv_sbox_cache[i_p[i]];
     }
@@ -231,12 +245,12 @@ VALUE cr_c_dot(VALUE self, VALUE a, VALUE b) {
  * readable this way (and we can afford to waste 2-3KB and a second on startup,
  * can't we?)
  */
-char *dot_cache[0xf];
+unsigned char *dot_cache[0xf];
 
-char **make_dot_cache() {
+unsigned char **make_dot_cache() {
     int i,j;
     for(i=0;i<0x10;i++) {
-        dot_cache[i]=(char *)malloc(256*sizeof(char));
+        dot_cache[i]=(unsigned char *)malloc(256*sizeof(unsigned char));
         for(j=0;j<0x100;j++) {
             dot_cache[i][j]=dot(i,j);
         }
@@ -255,7 +269,7 @@ char **make_dot_cache() {
  *
  * This is the part of the cipher that performs "bit diffusion".
  */
-char *mix_columns(char *in_block, unsigned char block_words) {
+unsigned char *mix_columns(unsigned char *in_block, unsigned char block_words) {
     unsigned char t_column[COLUMN_SIZE];
     int i;
     for(i=0;i<block_words*COLUMN_SIZE;i+=COLUMN_SIZE) {
@@ -283,7 +297,7 @@ char *mix_columns(char *in_block, unsigned char block_words) {
 /*
  * As with mix_columns() except it uses an inverted matrix.
  */
-char *inverse_mix_columns(char *in_block, unsigned char block_words) {
+unsigned char *inverse_mix_columns(unsigned char *in_block, unsigned char block_words) {
     unsigned char t_column[COLUMN_SIZE];
     int i;
     for(i=0;i<block_words*COLUMN_SIZE;i+=COLUMN_SIZE) {
@@ -316,7 +330,7 @@ char *inverse_mix_columns(char *in_block, unsigned char block_words) {
  */
 static VALUE cr_c_mix_column(VALUE self, VALUE in_block) {
     volatile VALUE str=in_block;
-    char *p=(char *)malloc(RSTRING(str)->len*sizeof(char));
+    unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(unsigned char));
     memcpy(p, RSTRING(str)->ptr, RSTRING(str)->len);
     mix_columns(p, RSTRING(str)->len/COLUMN_SIZE);
     VALUE out_str=rb_str_new(p, RSTRING(str)->len);
@@ -330,7 +344,7 @@ static VALUE cr_c_mix_column(VALUE self, VALUE in_block) {
  
 static VALUE cr_c_inverse_mix_column(VALUE self, VALUE in_block) {
     volatile VALUE str=in_block;
-    char *p=(char *)malloc(RSTRING(str)->len*sizeof(char));
+    unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(unsigned char));
     memcpy(p, RSTRING(str)->ptr, RSTRING(str)->len);
     inverse_mix_columns(p, RSTRING(str)->len/COLUMN_SIZE);
     VALUE out_str=rb_str_new(p, RSTRING(str)->len);
@@ -349,6 +363,7 @@ void Init_core() {
     rb_define_module_function(cFoo, "mix_column", cr_c_mix_column, 1);
     rb_define_module_function(cFoo, "inv_mix_column", cr_c_inverse_mix_column, 1);
     rb_define_module_function(cFoo, "sbox_block", cr_c_sbox_block, 1);
+    rb_define_module_function(cFoo, "sbox", cr_c_sbox, 1);
     rb_define_module_function(cFoo, "inv_sbox_block", cr_c_inverse_sbox_block, 1);
     rb_define_module_function(cFoo, "dot", cr_c_dot, 2);
     make_dot_cache();
