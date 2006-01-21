@@ -110,7 +110,7 @@ high importance for you.
         end
         
         make_shiftrow_map
-        
+
         def shift_rows(state_b) #:nodoc:
           row_len=state_b.length/4
           
@@ -343,8 +343,8 @@ The output is a ByteStream object, which is to say more-or-less a String.
             state=round0(state, expanded_key[0])
             (1 .. rounds-1).each do 
                 |current_round|
-                #puts "n #{current_round}"
-                #p expanded_key[current_round]
+                puts "n #{current_round}" if $DEBUG
+                p expanded_key[current_round] if $DEBUG
                 state=roundn(state, expanded_key[current_round])
             end
             return roundl(state, expanded_key[rounds])
