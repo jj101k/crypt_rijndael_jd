@@ -111,6 +111,10 @@ high importance for you.
         
         make_shiftrow_map
 
+				def Rijndael.shiftrow_map
+					@@shiftrow_map
+				end
+
         def shift_rows(state_b) #:nodoc:
           row_len=state_b.length/4
           
