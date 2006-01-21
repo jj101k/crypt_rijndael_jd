@@ -130,7 +130,9 @@ end
 	ctext_cbc=cipher.encrypt_CBC(ivs[16], sample_long)
 
 	puts "Testing time-to-encrypt a big block of data (keeping it in core)...\n";
-	huge_ptext=IO.readlines("bwulf10.txt", nil)[0]
+	#huge_ptext=IO.readlines("bwulf10.txt", nil)[0]
+	# Bug workaround for Linux
+	huge_ptext=File.open("bwulf10.txt", "r").read
 
 	crypt=Crypt::Rijndael.new(keys[16])
 
