@@ -178,7 +178,7 @@ static VALUE cr_c_sbox_block(VALUE self, VALUE str) {
     for(i=0;i<RSTRING(str)->len;i++) {
         p[i]=sbox_cache[i_p[i]];
     }
-    VALUE out_str=rb_str_new(p, RSTRING(str)->len);
+    VALUE out_str=rb_str_new((char *)p, RSTRING(str)->len);
     free(p);
     return out_str;
 }
@@ -189,12 +189,12 @@ static VALUE cr_c_sbox_block(VALUE self, VALUE str) {
 
 static VALUE cr_c_inverse_sbox_block(VALUE self, VALUE str) {
     int i;
-    unsigned char *i_p=RSTRING(str)->ptr;
+    unsigned char *i_p=(unsigned char *)RSTRING(str)->ptr;
     unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(unsigned char));
     for(i=0;i<RSTRING(str)->len;i++) {
         p[i]=inv_sbox_cache[i_p[i]];
     }
-    VALUE out_str=rb_str_new(p, RSTRING(str)->len);
+    VALUE out_str=rb_str_new((char *)p, RSTRING(str)->len);
     free(p);
     return out_str;
 }
@@ -333,7 +333,7 @@ static VALUE cr_c_mix_column(VALUE self, VALUE in_block) {
     unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(unsigned char));
     memcpy(p, RSTRING(str)->ptr, RSTRING(str)->len);
     mix_columns(p, RSTRING(str)->len/COLUMN_SIZE);
-    VALUE out_str=rb_str_new(p, RSTRING(str)->len);
+    VALUE out_str=rb_str_new((char *)p, RSTRING(str)->len);
     free(p);
     return out_str;
 }
@@ -347,7 +347,7 @@ static VALUE cr_c_inverse_mix_column(VALUE self, VALUE in_block) {
     unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(unsigned char));
     memcpy(p, RSTRING(str)->ptr, RSTRING(str)->len);
     inverse_mix_columns(p, RSTRING(str)->len/COLUMN_SIZE);
-    VALUE out_str=rb_str_new(p, RSTRING(str)->len);
+    VALUE out_str=rb_str_new((char *)p, RSTRING(str)->len);
     free(p);
     return out_str;
 }
