@@ -1,11 +1,7 @@
 To install, it's pretty much just:
 
-ruby install.rb
-
-...possibly followed by:
-
-make
-make install
+ruby make.rb
+sudo ruby install.rb
 
 It will ask you whether you want the binary or ruby core. I'd recommend the former, for performance
 reasons: the binary module is much faster - the difference between 12KiB/s and 4KiB/s encryption speed

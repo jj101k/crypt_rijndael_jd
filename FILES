@@ -10,15 +10,15 @@ bwulf10.txt:
 	A sample file (for testing encryption)
 core.c:
 	The C core
-core.rb:
+pr-core.rb:
 	The (alternate) ruby core
 extconf.rb:
-	Script to build the makefile. Use install.rb instead.
-install-pr.rb:
-	Script to install the pure-ruby core. Use install.rb instead.
+	Script to build the makefile. Use make.rb instead.
+install.rb:
+	Maker script. See INSTALL
 install.rb:
 	Master installer script. See INSTALL
 rijndael.rb:
 	The main class definitions
 test.rb:
-	A test script, suitable for running after install.
+	A test script, suitable for running before install.

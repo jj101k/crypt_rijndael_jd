@@ -3,18 +3,16 @@ include Config
 require "fileutils"
 include FileUtils::Verbose
 
-mkdir_p(CONFIG["sitelibdir"]+"/crypt")
-install("rijndael.rb", CONFIG["sitelibdir"]+"/crypt")
 loop do
 	puts "Do you want to install the binary (b) or pure-ruby (r) core? (b/r)?"
 
 	answer=STDIN.gets
 	if(answer=~/^b/i)
 			require "./extconf.rb"
-			exit
+			exit system(ENV["MAKE"]||"make")
 	elsif(answer=~/^r/i)
+			File.rm("Makefile")
 			File.copy("pr-core.rb", "core.rb")
-			require "./install-pr.rb"
 			exit
 	end
 
