@@ -1,6 +1,13 @@
 #!/usr/bin/ruby -w
-require "./core"
+require ARGV[0]||"./core"
 require "./rijndael"
+
+TestString1="0123456789\x9abc\xcde\xff"
+#p((0..255).collect {|i| Crypt::Rijndael::Core.sbox(i)}.pack("C*"))
+#p "0123456789\x9abc\xcde\xff"
+#p Crypt::Rijndael::Core.sbox_block(TestString1)
+#p Crypt::Rijndael::Core.mix_column(TestString1)
+#p((0..255).collect {|i| Crypt::Rijndael::Core.dot(i, 255-i)}.pack("C*"))
 
 puts "Testing simplest possible encryption"
 cipher=Crypt::Rijndael.new("1"*16)
