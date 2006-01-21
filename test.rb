@@ -50,6 +50,7 @@ if(cipher.decrypt(ctext) == test_string)
 	puts "Apparently I can.\n"
 else
 	puts "Erk! Nope, something's broken.\n"
+	raise
 end
 
 
