@@ -2,7 +2,6 @@ require "rbconfig.rb"
 include Config
 require "fileutils"
 include FileUtils::Verbose
-require "generate-initial-keys.rb"
 
 loop do
 	puts "Do you want to install the binary (b) or pure-ruby (r) core? (b/r)?"
