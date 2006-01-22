@@ -1,6 +1,12 @@
 #!/usr/bin/ruby -w
 require ARGV[0]||"./core"
 require "./rijndael"
+use_builtin_cbc=nil
+begin
+require "crypt/cbc"
+rescue LoadError
+use_builtin_cbc=1
+end
 
 TestString1="0123456789\x9abc\xcde\xff"
 #p((0..255).collect {|i| Crypt::Rijndael::Core.sbox(i)}.pack("C*"))
@@ -127,7 +133,12 @@ end
 
 	sample_long="This is some text that, well, basically exists only for the purpose of being long, thus forcing the usage of a block mode.\n"
 	cipher=Crypt::Rijndael.new(keys[16])
-	ctext_cbc=cipher.encrypt_CBC(ivs[16], sample_long)
+	ctext_cbc=nil
+	if(use_builtin_cbc)
+		ctext_cbc=cipher.encrypt_CBC(ivs[16], sample_long)
+	else
+		ctext_cbc=Crypt::CBC.new(cipher).encrypt(ivs[16], sample_long)
+	end
 
 	puts "Testing time-to-encrypt a big block of data (keeping it in core)...\n";
 	#huge_ptext=IO.readlines("bwulf10.txt", nil)[0]
@@ -137,7 +148,12 @@ end
 	crypt=Crypt::Rijndael.new(keys[16])
 
 	before=Time.new
-	huge_ctext=crypt.encrypt_CBC(ivs[16], huge_ptext)
+	huge_ctext=nil
+	if(use_builtin_cbc)
+		huge_ctext=crypt.encrypt_CBC(ivs[16], huge_ptext)
+	else
+		huge_ctext=Crypt::CBC.new(cipher).encrypt(ivs[16], huge_ptext)
+	end
 	after=Time.new
 
 	diff=after-before
@@ -147,7 +163,12 @@ end
   puts "Switching to Crypt::AES for decrypt"
 	crypt=Crypt::AES.new(keys[16])
 	before=Time.new
-	new_huge_ptext=crypt.decrypt_CBC(ivs[16], huge_ctext)
+	new_huge_ptext=nil
+	if(use_builtin_cbc)
+		new_huge_ptext=crypt.decrypt_CBC(ivs[16], huge_ctext)
+	else
+		new_huge_ptext=Crypt::CBC.new(cipher).decrypt(ivs[16], huge_ctext)
+	end
 	after=Time.new
 
 	diff=after-before
