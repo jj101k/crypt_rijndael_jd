@@ -1,3 +1,7 @@
+v0.91
+Jim (encrypted):
+      Switch to Crypt::ByteStream
+
 v0.9
 Jim (encrypted):
       Use Crypt::CBC because it's faster
