@@ -1,4 +1,4 @@
-require "bytestream"
+require "crypt/bytestream"
 # This is to help testing
 unless(defined? Crypt::Rijndael::Core)
 	require "crypt/rijndael/core"
@@ -202,7 +202,7 @@ high importance for you.
             p "Expanding key" if $DEBUG
             
             #expanded_key=@key;
-            ek_words=@key.unpack("N*").map {|number| ByteStream.new([number].pack("N"))}
+            ek_words=@key.unpack("N*").map {|number| Crypt::ByteStream.new([number].pack("N"))}
         
             rounds=_round_count();
         
@@ -240,7 +240,7 @@ high importance for you.
                     p sprintf("%.8x (RotWord)", p_temp.to_x) if $DEBUG        
                     
                     # tr would be great here again.
-                    p_temp=ByteStream.new(Core.sbox_block(p_temp))
+                    p_temp=Crypt::ByteStream.new(Core.sbox_block(p_temp))
                     p sprintf("%.8x (SubWord)", p_temp.to_x) if $DEBUG    
                     p sprintf("%.8x (Rcon[i/Nk])", p_round_constant[(i/@key_words).to_i].to_x) if $DEBUG
                     p_temp^=p_round_constant[(i/@key_words).to_i]
@@ -255,7 +255,7 @@ high importance for you.
             expanded_key=Array(rounds+1)
             (0 .. rounds).each do
                 |round|
-                expanded_key[round]=ByteStream.new(ek_words[round*@block_words, @block_words].to_s)
+                expanded_key[round]=Crypt::ByteStream.new(ek_words[round*@block_words, @block_words].to_s)
             end
             return expanded_key; 
         end
@@ -265,7 +265,7 @@ high importance for you.
             p "Expanding key (large)" if $DEBUG
             
             #expanded_key=@key
-            ek_words=@key.unpack("N*").map {|number| ByteStream.new([number].pack("N"))}
+            ek_words=@key.unpack("N*").map {|number| Crypt::ByteStream.new([number].pack("N"))}
         
             rounds=_round_count();
         
@@ -299,7 +299,7 @@ high importance for you.
                     p sprintf("%.8x (RotWord)", p_temp.to_x) if $DEBUG
         
                     # tr would be great here again.
-                    p_temp=ByteStream.new(Core.sbox_block(p_temp))
+                    p_temp=Crypt::ByteStream.new(Core.sbox_block(p_temp))
                     p sprintf("%.8x (SubWord)", p_temp.to_x) if $DEBUG
                     p sprintf("%.8x (Rcon[i/Nk])", p_round_constant[(i/@key_words).to_i].to_x) if $DEBUG
                     p_temp^=p_round_constant[(i/@key_words).to_i]
@@ -316,7 +316,7 @@ high importance for you.
             expanded_key=Array(rounds+1)
             (0 .. rounds).each do
                 |round|
-                expanded_key[round]=ByteStream.new(ek_words[round*@block_words, @block_words].to_s)
+                expanded_key[round]=Crypt::ByteStream.new(ek_words[round*@block_words, @block_words].to_s)
             end
             return expanded_key;
         end
@@ -332,7 +332,7 @@ high importance for you.
 Your main entry point. You must provide an input string of a valid length - if not, it'll +raise+.
 Valid lengths are 16, 24 or 32 bytes, and it will pick the block size based on the length of the input.
 
-The output is a ByteStream object, which is to say more-or-less a String.
+The output is a Crypt::ByteStream object, which is to say more-or-less a String.
 =end
         def encrypt(plaintext)
 						if(plaintext.length!=@block_words*4)
@@ -359,7 +359,7 @@ Your other main entry point. You must provide an input string of a valid length 
 Valid lengths are 16, 24 or 32 bytes, and it will pick the block size based on the length of the input.
 Of course, if the string to decrypt is of invalid length then you've got other problems...
 
-The output is a ByteStream object, which is to say more-or-less a String.
+The output is a Crypt::ByteStream object, which is to say more-or-less a String.
 =end
         def decrypt(ciphertext)
 						if(ciphertext.length!=@block_words*4)
@@ -394,7 +394,7 @@ be unique than that it be unpredictable.
         def encrypt_CBC(iv, plaintext)
             raise "Invalid block size: #{iv.length}" unless self.blocksize=iv.length
                     
-            last_block_e=ByteStream.new(iv);
+            last_block_e=Crypt::ByteStream.new(iv);
             
             blockl_b=@block_words*4;
             
@@ -431,7 +431,7 @@ currently.
 						# TODO: Failure detection.
             raise "Invalid block size: #{iv.length}" unless self.blocksize=iv.length
         
-            last_block_e=ByteStream.new(iv);
+            last_block_e=Crypt::ByteStream.new(iv);
             
             blockl_b=@block_words*4;
         
@@ -446,7 +446,7 @@ currently.
 
                 pt_block=decrypt(current_block)
                 decrypted=last_block_e^pt_block
-                last_block_e=ByteStream.new(current_block)
+                last_block_e=Crypt::ByteStream.new(current_block)
                 r_data+=decrypted
             end
             # We assume PKCS5 padding.

@@ -1,4 +1,4 @@
-This module absolutely requires class ByteStream and will not work without it. You should be able to
+This module absolutely requires class Crypt::ByteStream and will not work without it. You should be able to
 find it on RAA.
 
 Also of note, this is likely to namespace-conflict with any existing Rijndael/AES ruby modules... but
