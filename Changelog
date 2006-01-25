@@ -1,3 +1,15 @@
+v0.9
+Jim (encrypted):
+      Use Crypt::CBC because it's faster
+      Clean up better when switching cores
+      Stuff to do
+      No makefiles here please
+      Numbers boosted slightly by improved Crypt::CBC
+      Oops
+      Make making releases easier
+      Show old tag; fix changelog version stuff; changelog updates to top
+      Merge ../misc_build_stuff
+
 0.7
 	- Allow local testing
 	- Always cache
