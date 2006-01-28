@@ -52,21 +52,6 @@ high importance for you.
             return @block_words*4
         end
         
-        
-        def Rijndael.pad_pkcs5(string, to_length) #:nodoc:
-            diff= to_length - (string.length % to_length)
-            string+=[diff].pack("C") * diff
-            return string
-        end
-        
-        def Rijndael.unpad_pkcs5(string) #:nodoc:
-            return unless string.length > 0
-            
-            pad_len=string[-1]
-            string.slice!(-pad_len .. -1)
-            return string
-        end
-        
         @@shift_for_block_len={
           4=>[0,1,2,3],
           6=>[0,1,2,3],
