@@ -1,4 +1,6 @@
-require "crypt/bytestream"
+unless(defined? Crypt::ByteStream)
+	require "crypt/bytestream"
+end
 # This is to help testing
 unless(defined? Crypt::Rijndael::Core)
 	require "crypt/rijndael/core"
