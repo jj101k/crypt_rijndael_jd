@@ -135,7 +135,8 @@ end
 	cipher=Crypt::Rijndael.new(keys[16])
 	ctext_cbc=nil
 	if(!have_crypt_cbc)
-		puts "No Crypt::CBC, skipping"
+		puts "No Crypt::CBC, skipping CBC tests"
+		exit
 	else
 		ctext_cbc=Crypt::CBC.new(cipher).encrypt(ivs[16], sample_long)
 	end
