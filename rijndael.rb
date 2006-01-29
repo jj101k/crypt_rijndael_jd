@@ -135,12 +135,12 @@ high importance for you.
             # Tune this - jim
             input=Core.mix_column(input)
             
-            return round_key^input;
+            return round0(input, round_key)
         end
         
         def inv_roundn(input, round_key) #:nodoc:
             
-            input=round_key^input
+            input=round0(input, round_key)
             row_len=@block_words
             input=Core.inv_mix_column(input)
 
@@ -157,12 +157,12 @@ high importance for you.
 
             input=Core.sbox_block(input)
             input=shift_rows(input)
-            return round_key^input;
+            return round0(input, round_key)
         end
         
         def inv_roundl(input, round_key) #:nodoc:
             # convert to use tr for the s-box
-            input=round_key^input
+            input=round0(input, round_key)
             input=Core.inv_sbox_block(input)
             input=inv_shift_rows(input)
             #input=bytes_n.pack("C*")  
