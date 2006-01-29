@@ -1,5 +1,10 @@
 #include <string.h>
 #include <stdlib.h>
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#else
+#include <machine/types.h>
+#endif
 #include "ruby.h"
 
 /*
@@ -14,6 +19,23 @@
  * This is a magic number as far as Rijndael is concerned.
  */
 #define POLYNOMIAL_VALUE 0x11b
+
+#define MAX_KEY_WORDS 8
+#define MIN_KEY_WORDS 4
+#define MAX_BLOCK_WORDS 8
+
+/*
+ * Rijndael likes to deal with 'columns', and they're always four bytes high.
+ */
+#define COLUMN_SIZE 4
+
+
+#define rounds_by_block_size(a) ((a==4)?10:(a==6)?12:14)
+#define bigger_number(a,b) ((a>b)?a:b)
+#define MAX_ROUND_CONSTANTS_NEEDED (MAX_BLOCK_WORDS*\
+	(rounds_by_block_size(MAX_BLOCK_WORDS)+1)/MIN_KEY_WORDS)
+// The following gets set to 00000000000000000 by default
+uint32_t p_round_constant[MAX_ROUND_CONSTANTS_NEEDED];
 
 /*
  * xtime(somebyte)
@@ -164,20 +186,30 @@ void make_sbox_caches() {
     }
 }
 
+// malloc() but no free(), if 'p' is null
+unsigned char *sbox_block(unsigned char *i_p, unsigned int length, unsigned char *p) {
+    int i;
+    if(!p) p=(unsigned char *)malloc(length*sizeof(unsigned char));
+    for(i=0;i<length;i++) {
+        p[i]=sbox_cache[i_p[i]];
+    }
+    return p;
+}
+
 /*
  * Does a block-at-a-time sbox operation. Doesn't care how big the block is,
  * because it doesn't need to.
  *
  * Uses a cache. The output is another string.
  */
-
 static VALUE cr_c_sbox_block(VALUE self, VALUE str) {
     int i;
     unsigned char *i_p=(unsigned char *)RSTRING(str)->ptr;
-    unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(unsigned char));
-    for(i=0;i<RSTRING(str)->len;i++) {
-        p[i]=sbox_cache[i_p[i]];
-    }
+    unsigned int length = RSTRING(str)->len;
+    unsigned char *p=(unsigned char *)malloc(length*sizeof(unsigned char));
+
+	sbox_block(i_p, length, p);
+
     VALUE out_str=rb_str_new((char *)p, RSTRING(str)->len);
     free(p);
     return out_str;
@@ -199,10 +231,6 @@ static VALUE cr_c_inverse_sbox_block(VALUE self, VALUE str) {
     return out_str;
 }
 
-/*
- * Rijndael likes to deal with 'columns', and they're always four bytes high.
- */
-#define COLUMN_SIZE 4
 
 
 /*
@@ -353,19 +381,89 @@ static VALUE cr_c_inverse_mix_column(VALUE self, VALUE in_block) {
 }
 
 /*
- * This class provides essential functions for Rijndael encryption that are expensive to do in Ruby
- * and comfortably fit into C-style procedural code.
+ * This is used to expand the key to blocklen*(rounds+1) bits
+ */
+static VALUE expand_key(VALUE self, VALUE block_len) {
+	uint32_t key_len_b = RSTRING(rb_iv_get(self, "@key"))->len;
+	uint32_t key_len_w = key_len_b/4;
+	unsigned char block_len_w = NUM2CHAR(block_len)/4;
+	int i;
+	
+	unsigned char round_constants_needed = block_len_w*
+		(rounds_by_block_size(bigger_number(block_len_w, key_len_w))+1)
+		/key_len_w;
+	
+	uint32_t *expanded_key_words=(uint32_t *)malloc(round_constants_needed*key_len_b);
+	
+	memcpy(expanded_key_words, 
+		RSTRING(rb_iv_get(self, "@key"))->ptr, key_len_b);
+	
+	if(key_len_w <= 6) {
+		// Short (128-bit and 192-bit) keys
+		for(i=key_len_w; i<round_constants_needed*key_len_w;i++) {
+			uint32_t n_temp=expanded_key_words[i+1];
+			if(i % key_len_w == 0) {
+				// Rotate, sbox, xor
+				unsigned char *p_temp = (unsigned char *) &n_temp;
+				unsigned char t_byte=p_temp[0];
+				p_temp[0]=p_temp[1];
+				p_temp[1]=p_temp[2];
+				p_temp[2]=p_temp[3];
+				p_temp[3]=t_byte;
+				p_temp = sbox_block(p_temp, 4, p_temp);
+				n_temp^=p_round_constant[i/key_len_w];
+			}
+			expanded_key_words[i] = n_temp^expanded_key_words[i-key_len_w];
+		}
+	} else {
+		// Long (256-bit) keys
+		for(i=key_len_w; i<round_constants_needed*key_len_w;i++) {
+			uint32_t n_temp=expanded_key_words[i+1];
+			if(i % key_len_w == 0) {
+				// Rotate, xor
+				unsigned char *p_temp = (unsigned char *) &n_temp;	
+				unsigned char t_byte=p_temp[0];
+				p_temp[0]=p_temp[1];
+				p_temp[1]=p_temp[2];
+				p_temp[2]=p_temp[3];
+				p_temp[3]=t_byte;
+				n_temp^=p_round_constant[i/key_len_w];
+			} else if(i % key_len_w == 4) {
+				// sbox
+				sbox_block((unsigned char *)n_temp, 4, (unsigned char *)n_temp);
+			}
+			expanded_key_words[i] = n_temp^expanded_key_words[i-key_len_w];
+		}	
+	}
+	VALUE expanded_key_s = rb_str_new((char *)expanded_key_words,
+		round_constants_needed*key_len_b);
+	return expanded_key_s;
+}
+
+void make_round_constants() {
+	unsigned char round_constants_needed = MAX_ROUND_CONSTANTS_NEEDED;
+	unsigned char temp_v;
+	int i;
+	for(i=1, temp_v=1; i < round_constants_needed; i++, temp_v = dot(02, temp_v)) {
+		*((char *)(p_round_constant+i))=temp_v;
+	}
+}
+
+/*
+ * This class provides essential functions for Rijndael encryption that are 
+ * expensive to do in Ruby and comfortably fit into C-style procedural code.
  */
 void Init_core() {
     VALUE cCrypt=rb_define_class("Crypt", rb_cObject);
     VALUE cCR=rb_define_class_under(cCrypt, "Rijndael", rb_cObject);
-    VALUE cFoo=rb_define_class_under(cCR, "Core", rb_cObject);
-    rb_define_module_function(cFoo, "mix_column", cr_c_mix_column, 1);
-    rb_define_module_function(cFoo, "inv_mix_column", cr_c_inverse_mix_column, 1);
-    rb_define_module_function(cFoo, "sbox_block", cr_c_sbox_block, 1);
-    rb_define_module_function(cFoo, "sbox", cr_c_sbox, 1);
-    rb_define_module_function(cFoo, "inv_sbox_block", cr_c_inverse_sbox_block, 1);
-    rb_define_module_function(cFoo, "dot", cr_c_dot, 2);
+    VALUE cCRC=rb_define_class_under(cCR, "Core", rb_cObject);
+    rb_define_module_function(cCRC, "mix_column", cr_c_mix_column, 1);
+    rb_define_module_function(cCRC, "inv_mix_column", cr_c_inverse_mix_column, 1);
+    rb_define_module_function(cCRC, "sbox_block", cr_c_sbox_block, 1);
+    rb_define_module_function(cCRC, "sbox", cr_c_sbox, 1);
+    rb_define_module_function(cCRC, "inv_sbox_block", cr_c_inverse_sbox_block, 1);
+    rb_define_module_function(cCRC, "dot", cr_c_dot, 2);
     make_dot_cache();
     make_sbox_caches();
+    make_round_constants();
 }
