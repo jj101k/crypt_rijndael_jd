@@ -1,10 +1,8 @@
 #!/usr/bin/ruby -w
 require ARGV[0]||"./core"
 require "./rijndael"
-have_crypt_cbc=nil
 begin
 require "crypt/cbc"
-have_crypt_cbc=1
 rescue LoadError
 end
 
@@ -134,7 +132,7 @@ end
 	sample_long="This is some text that, well, basically exists only for the purpose of being long, thus forcing the usage of a block mode.\n"
 	cipher=Crypt::Rijndael.new(keys[16])
 	ctext_cbc=nil
-	if(!have_crypt_cbc)
+	if(!defined? Crypt::CBC)
 		puts "No Crypt::CBC, skipping CBC tests"
 		exit
 	else
@@ -150,7 +148,7 @@ end
 
 	before=Time.new
 	huge_ctext=nil
-	if(!have_crypt_cbc)
+	if(!defined? Crypt::CBC)
 		puts "No Crypt::CBC, skipping"
 	else
 		huge_ctext=Crypt::CBC.new(cipher).encrypt(ivs[16], huge_ptext)
@@ -165,7 +163,7 @@ end
 	crypt=Crypt::AES.new(keys[16])
 	before=Time.new
 	new_huge_ptext=nil
-	if(!have_crypt_cbc)
+	if(!defined? Crypt::CBC)
 		puts "No Crypt::CBC, skipping"
 	else
 		new_huge_ptext=Crypt::CBC.new(cipher).decrypt(ivs[16], huge_ctext)
