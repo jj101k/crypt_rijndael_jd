@@ -144,7 +144,7 @@ end
 	# Bug workaround for Linux
 	huge_ptext=File.open("bwulf10.txt", "r").read
 
-	crypt=Crypt::Rijndael.new(keys[16])
+	cipher=Crypt::Rijndael.new(keys[16])
 
 	before=Time.new
 	huge_ctext=nil
@@ -160,7 +160,7 @@ end
 	puts sprintf("#{diff} seconds to encrypt a %.1fKiB file (%.1fKiB/s).\n", size, size/diff)
 
   puts "Switching to Crypt::AES for decrypt"
-	crypt=Crypt::AES.new(keys[16])
+	cipher=Crypt::AES.new(keys[16])
 	before=Time.new
 	new_huge_ptext=nil
 	if(!defined? Crypt::CBC)
