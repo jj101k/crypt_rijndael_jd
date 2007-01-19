@@ -1,3 +1,20 @@
+v0.9.2
+Jim A. Driscoll:
+      Remove built-in CBC
+      Soften ByteStream dep
+      Make no-CBC-tests clearer
+      No need for PKCS#5 any more
+      We need stdint.h now
+      Ignore mkmfs log
+      Don't say 'foo'; add expand_key() stuff to core
+      Add round 0 to core
+      Use round 0 rather than ^
+      Fix stupid perl-like syntax error in the C core
+      Re-enable using Crypt::CBC in the tests
+      Clean up the test script a little
+      Fix variable leak in the test script!
+      Add a simple profiler
+
 v0.91
 Jim (encrypted):
       Switch to Crypt::ByteStream
