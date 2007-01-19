@@ -459,7 +459,7 @@ VALUE cr_c_round0(VALUE self, VALUE input, VALUE round_key) {
 		output_words[i]=input_words[i]^round_key_words[i];
 	}
 	VALUE output_s = rb_str_new((char *)output_words, length_w*4);
-	return output_s
+	return output_s;
 }
 
 /*
