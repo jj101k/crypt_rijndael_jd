@@ -105,11 +105,11 @@ high importance for you.
         def shift_rows(state_b) #:nodoc:
           row_len=state_b.length/4
           
-		  state_o=@@shiftrow_map[row_len].map do
-				|offset|
-				state_b[offset]
-		  end
-		  return state_o.pack("C*")
+					state_o=@@shiftrow_map[row_len].map do
+						|offset|
+						state_b[offset]
+					end
+					return state_o.pack("C*")
         end
         
         def inv_shift_rows(state_b) #:nodoc:
@@ -183,6 +183,22 @@ high importance for you.
             end
             return ROUNDS_BY_BLOCK_SIZE[biggest_words]
         end
+				def round_constants
+						@@round_constants ||= {}
+						@@round_constants[@block_words] ||= {}
+						unless(@@round_constants[@block_words][@key_words]) then
+							temp_v=1
+							p_round_constant=[0,1].map {|i| [i, 0, 0, 0].pack("C*")}
+							
+							p_round_constant+=
+							(2 .. (@block_words * (_round_count + 1)/@key_words).to_i).to_a.map {
+									#0x1000000<<($_-1)
+									[(temp_v=Core.dot(02,temp_v)),0,0,0].pack("C*")
+							}
+							@@round_constants[@block_words][@key_words] = p_round_constant
+						end
+						@@round_constants[@block_words][@key_words]
+				end
         
         def expand_key_le6 #:nodoc
 					# For short (128-bit, 192-bit) keys this is used to expand the key to blocklen*(rounds+1) bits
@@ -191,18 +207,9 @@ high importance for you.
             #expanded_key=@key;
             ek_words=@key.unpack("N*").map {|number| Crypt::ByteStream.new([number].pack("N"))}
         
-            rounds=_round_count();
+						p_round_constant = round_constants
         
-        # cache this FIXME
-        
-            temp_v=1;
-            p_round_constant=Array.new
-            p_round_constant=[0,1].map {|i| [i, 0, 0, 0].pack("C*")}
-            
-            p_round_constant+=
-            (2 .. (@block_words * (rounds + 1)/@key_words).to_i).to_a.map {
-                [(temp_v=Core.dot(02,temp_v)),0,0,0].pack("C*")
-            }
+            rounds=_round_count
             
             if($DEBUG) 
                 (0 .. @key_words-1).each do
@@ -254,16 +261,9 @@ high importance for you.
             #expanded_key=@key
             ek_words=@key.unpack("N*").map {|number| Crypt::ByteStream.new([number].pack("N"))}
         
-            rounds=_round_count();
-        
-        # cache this FIXME
-        
-            temp_v=1
-            p_round_constant=[0,1].map {|i| [i, 0,0,0].pack("C*")}
-            p_round_constant+=(2 .. (@block_words * (rounds + 1)/@key_words).to_i).to_a.map { 
-                #0x1000000<<($_-1)
-                [temp_v=Core.dot(02,temp_v) ,0,0,0].pack("C*")
-            }
+						p_round_constant = round_constants
+
+            rounds=_round_count
 
             if($DEBUG) 
                 (0 .. @key_words-1).each do
