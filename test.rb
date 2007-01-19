@@ -3,7 +3,7 @@ require ARGV[0]||"./core"
 require "./rijndael"
 have_crypt_cbc=nil
 begin
-require "crypt/cbc2"
+require "crypt/cbc"
 have_crypt_cbc=1
 rescue LoadError
 end
