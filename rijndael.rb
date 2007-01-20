@@ -43,6 +43,7 @@ high importance for you.
 					raise "Invalid key length: #{new_key.length}" unless(self.class.key_sizes_supported.find {|size| size==new_key.length})
 					@key = new_key
 					@key_words=@key.length/4
+					@round_count = nil
 				end
 
 				attr_reader :block
@@ -51,6 +52,7 @@ high importance for you.
 						raise "Invalid block size: #{new_block.length}" unless(block_sizes_supported.find { |size| size==new_block.length })
 						@block_words = new_block.length / 4
 						@expanded_key = nil
+						@round_count = nil
 					end
 					@block = new_block
 				end
@@ -88,12 +90,13 @@ high importance for you.
         
         
         def round_count #:nodoc:
+						return @round_count if @round_count
             biggest_words=if(@block_words > @key_words)
                 @block_words
             else
                 @key_words
             end
-            return @@rounds_by_block_size[biggest_words]
+            @round_count = @@rounds_by_block_size[biggest_words]
         end
 				def round_constants #:nodoc:
 						@@round_constants ||= {}
