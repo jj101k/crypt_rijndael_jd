@@ -1,3 +1,24 @@
+v0.9.3
+Jim A. Driscoll:
+      Finally cache the round constants
+      Give the profile script a more meaningful name
+      Add a new (non-CBC) profiler script
+      Improve the no-CBC profiler script
+      Move the shift-row code into the cores, to make the binary system more efficient
+      Remove accidental debugging code
+      Move all rounds into cores
+      Split inv_sbox_block in the C core
+      Split round0 in the C core
+      Split inv_shift_rows in the C core
+      Switched roundl() in C core to use only internal code
+      Update the real roundl
+      All calls in the C core that can be made internal are now
+      Make the test script exit on failure
+      Documentation and minor API updates
+      Allow #round_count to cache
+      Bug fix: clear the expanded key when a new key is specified
+      Bug fix: don't regenerate the block-length-related data unless you have to
+
 v0.9.2
 Jim A. Driscoll:
       Remove built-in CBC
