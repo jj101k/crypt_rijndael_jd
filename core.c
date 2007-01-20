@@ -545,16 +545,19 @@ VALUE cr_c_shift_rows(VALUE self, VALUE state_b) {
 	return state_o;
 }
 
-VALUE cr_c_inv_shift_rows(VALUE self, VALUE state_b) {
-	unsigned char length_b = RSTRING(state_b)->len;
+char *inverse_shift_rows(char *state_b, size_t length_b) {
 	unsigned char length_w = length_b/4;
-	/* This does a copy */
-	VALUE state_o = rb_str_new((char *)state_b, length_b);
-	char *state_o_c = RSTRING(state_o)->ptr;
-	char *state_b_c = RSTRING(state_b)->ptr;
+	static char state_o[MAX_BLOCK_WORDS * 4];
 	int i;
 	for(i=0; i<length_b; i++) 
-		state_o_c[i] = state_b_c[inv_shiftrow_map[length_w][i]];
+		state_o[i] = state_b[inv_shiftrow_map[length_w][i]];
+	return state_o;
+}
+
+VALUE cr_c_inv_shift_rows(VALUE self, VALUE state_b) {
+	unsigned char length_b = RSTRING(state_b)->len;
+	char *state_o_c = inverse_shift_rows(RSTRING(state_b)->ptr, length_b);
+	VALUE state_o = rb_str_new((char *)state_o_c, length_b);
 	return state_o;
 }
 
