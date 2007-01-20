@@ -514,15 +514,20 @@ void make_round_constants() {
 	}
 }
 
-VALUE cr_c_round0(VALUE self, VALUE input, VALUE round_key) {
-	unsigned char length_w = RSTRING(input)->len/4;
-	uint32_t *input_words = (uint32_t *)(RSTRING(input)->ptr);
-	uint32_t *round_key_words = (uint32_t *)(RSTRING(round_key)->ptr);
-	uint32_t output_words[MAX_KEY_WORDS*4];
+uint32_t *round0(uint32_t *input_words, uint32_t *round_key_words, unsigned char length_w) {
+	static uint32_t output_words[MAX_KEY_WORDS*4];
 	unsigned char i;
 	for(i=0; i<length_w;i++) {
 		output_words[i]=input_words[i]^round_key_words[i];
 	}
+	return output_words;
+}
+
+VALUE cr_c_round0(VALUE self, VALUE input, VALUE round_key) {
+	unsigned char length_w = RSTRING(input)->len/4;
+	uint32_t *input_words = (uint32_t *)(RSTRING(input)->ptr);
+	uint32_t *round_key_words = (uint32_t *)(RSTRING(round_key)->ptr);
+	uint32_t *output_words = round0(input_words, round_key_words, length_w);
 	VALUE output_s = rb_str_new((char *)output_words, length_w*4);
 	return output_s;
 }
