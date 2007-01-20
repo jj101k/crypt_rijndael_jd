@@ -52,52 +52,7 @@ high importance for you.
             return @block_words*4
         end
         
-        def round0(input, round_key) #:nodoc:
-            return round_key^input;
-        end
         
-        def roundn(input, round_key) #:nodoc:
-            row_len=@block_words;
-        
-            input=Core.sbox_block(input)
-            input=Core.shift_rows(input)       
-            # Tune this - jim
-            input=Core.mix_column(input)
-            
-            return round0(input, round_key)
-        end
-        
-        def inv_roundn(input, round_key) #:nodoc:
-            
-            input=round0(input, round_key)
-            row_len=@block_words
-            input=Core.inv_mix_column(input)
-
-            
-            input=Core.inv_shift_rows(input)
-            # convert to use tr for the s-box ?
-            input=Core.inv_sbox_block(input)
-            
-            return input
-        end
-        
-        def roundl(input, round_key) #:nodoc:
-            # convert to use tr for the s-box
-
-            input=Core.sbox_block(input)
-            input=Core.shift_rows(input)
-            return round0(input, round_key)
-        end
-        
-        def inv_roundl(input, round_key) #:nodoc:
-            # convert to use tr for the s-box
-            input=round0(input, round_key)
-            input=Core.inv_sbox_block(input)
-            input=Core.inv_shift_rows(input)
-            #input=bytes_n.pack("C*")  
-            return input
-        end
-
         ROUNDS_BY_BLOCK_SIZE={
             4=>10,
             6=>12,
@@ -260,14 +215,14 @@ The output is a Crypt::ByteStream object, which is to say more-or-less a String.
             
             blockl_b=@block_words*4
             #puts "m #{state.length}"
-            state=round0(state, expanded_key[0])
+            state=Core.round0(state, expanded_key[0])
             (1 .. rounds-1).each do 
                 |current_round|
                 puts "n #{current_round}" if $DEBUG
                 p expanded_key[current_round] if $DEBUG
-                state=roundn(state, expanded_key[current_round])
+                state=Core.roundn(state, expanded_key[current_round])
             end
-            return roundl(state, expanded_key[rounds])
+            return Core.roundl(state, expanded_key[rounds])
         end
         
 =begin rdoc
@@ -286,13 +241,13 @@ The output is a Crypt::ByteStream object, which is to say more-or-less a String.
             state=ciphertext
             
             blockl_b=@block_words*4
-            state=inv_roundl(state, expanded_key[rounds])
+            state=Core.inv_roundl(state, expanded_key[rounds])
             (1 .. rounds-1).to_a.reverse.each do 
                 |current_round|
                 #puts "n #{current_round}"
-                state=inv_roundn(state, expanded_key[current_round])
+                state=Core.inv_roundn(state, expanded_key[current_round])
             end
-            decrypted=round0(state, expanded_key[0])
+            decrypted=Core.round0(state, expanded_key[0])
             #p "decrypted: #{decrypted}" if $VERBOSE
             return decrypted
         end

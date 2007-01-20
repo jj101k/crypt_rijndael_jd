@@ -1,7 +1,52 @@
 class Crypt
     class Rijndael
 					class Core
+						def self.roundn(input, round_key) #:nodoc:
+								row_len=@block_words;
+						
+								input=sbox_block(input)
+								input=shift_rows(input)       
+								# Tune this - jim
+								input=mix_column(input)
+								
+								return round0(input, round_key)
+						end
+						
+						def self.inv_roundn(input, round_key) #:nodoc:
+								
+								input=round0(input, round_key)
+								row_len=@block_words
+								input=inv_mix_column(input)
 
+								
+								input=inv_shift_rows(input)
+								# convert to use tr for the s-box ?
+								input=inv_sbox_block(input)
+								
+								return input
+						end
+						
+						def self.roundl(input, round_key) #:nodoc:
+								# convert to use tr for the s-box
+
+								input=sbox_block(input)
+								input=shift_rows(input)
+								return round0(input, round_key)
+						end
+						
+						def self.inv_roundl(input, round_key) #:nodoc:
+								# convert to use tr for the s-box
+								input=round0(input, round_key)
+								input=inv_sbox_block(input)
+								input=inv_shift_rows(input)
+								#input=bytes_n.pack("C*")  
+								return input
+						end
+
+
+						def self.round0(input, round_key) #:nodoc:
+								return round_key^input;
+						end
 						def self.make_shiftrow_map  #:nodoc:
 							shift_for_block_len={
 								4=>[0,1,2,3],
@@ -71,21 +116,21 @@ class Crypt
             POLYNOMIAL_SPACE=0x11b
 						COLUMN_SIZE=4
 
-            def Core.sbox_block(input)
+            def self.sbox_block(input)
                 return input.unpack("C*").map do
                     |byte| 
                     @@sbox[byte]
                 end.pack("C*")
             end
     
-            def Core.inv_sbox_block(input)
+            def self.inv_sbox_block(input)
                 return input.unpack("C*").map do
                     |byte| 
                     @@inv_sbox[byte]
                 end.pack("C*")
             end
                     
-            def Core.mix_column(col)
+            def self.mix_column(col)
 								block_words=col.length/COLUMN_SIZE
                 r_col=Array.new
                 (0 .. (block_words-1)).each {
@@ -113,7 +158,7 @@ class Crypt
             
             # The inverse of the above
             
-            def Core.inv_mix_column(col)
+            def self.inv_mix_column(col)
 								block_words=col.length/COLUMN_SIZE
                 r_col=Array.new
                 (0 .. (block_words-1)).each { |current_block|
@@ -138,7 +183,7 @@ class Crypt
                 return r_col.pack("C*")
             end
                 
-            def Core.xtime(a)
+            def self.xtime(a)
                 a*=2
                 if( a & 0x100 > 0 )
                     a^=0x1b
@@ -147,7 +192,7 @@ class Crypt
                 return a
             end            
             
-            def Core.dot(a, b)
+            def self.dot(a, b)
                 return 0 unless(a > 0 and b > 0)
                 
                 result=0
@@ -165,7 +210,7 @@ class Crypt
 
             # _Not_ the same as dot()
             # Multiplies a by b. In polynomial space. Without capping the value.
-            def Core.mul(a, b)
+            def self.mul(a, b)
                 result=0
                 tv=a
                 (0 .. 7).each do
@@ -180,7 +225,7 @@ class Crypt
             
             # The inverse of mul() above.
             
-            def Core.div(a, b)
+            def self.div(a, b)
                 acc=a
                 tv=b
                 result=0
@@ -197,7 +242,7 @@ class Crypt
             end
 
             # 8-bit number in, 8-bit number out
-            def Core.mult_inverse(num)
+            def self.mult_inverse(num)
                 return 0 unless num > 0
                 remainder=[POLYNOMIAL_SPACE, num]
                 auxiliary=[0,1]
@@ -220,7 +265,7 @@ class Crypt
                 return auxiliary[i-1]
             end
 
-            def Core.sbox(b)
+            def self.sbox(b)
                 c=0x63
                 b=mult_inverse(b)
                 result=b

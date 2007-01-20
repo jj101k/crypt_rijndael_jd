@@ -550,6 +550,34 @@ VALUE cr_c_inv_shift_rows(VALUE self, VALUE state_b) {
 	return state_o;
 }
 
+VALUE cr_c_roundn(VALUE self, VALUE input, VALUE round_key) {
+	input = cr_c_sbox_block(self, input);
+	input = cr_c_shift_rows(self, input);
+	input = cr_c_mix_column(self, input);
+	return cr_c_round0(self, input, round_key);
+}
+
+VALUE cr_c_inv_roundn(VALUE self, VALUE input, VALUE round_key) {
+	input = cr_c_round0(self, input, round_key);
+	input = cr_c_inverse_mix_column(self, input);
+	input = cr_c_inv_shift_rows(self, input);
+	input = cr_c_inverse_sbox_block(self, input);
+	return input;
+}
+
+VALUE cr_c_roundl(VALUE self, VALUE input, VALUE round_key) {
+	input = cr_c_sbox_block(self, input);
+	input = cr_c_shift_rows(self, input);
+	return cr_c_round0(self, input, round_key);
+}
+
+VALUE cr_c_inv_roundl(VALUE self, VALUE input, VALUE round_key) {
+	input = cr_c_round0(self, input, round_key);
+	input = cr_c_inverse_sbox_block(self, input);
+	input = cr_c_inv_shift_rows(self, input);
+	return input;
+}
+
 /*
  * This class provides essential functions for Rijndael encryption that are 
  * expensive to do in Ruby and comfortably fit into C-style procedural code.
@@ -566,6 +594,11 @@ void Init_core() {
     rb_define_module_function(cCRC, "dot", cr_c_dot, 2);
     rb_define_module_function(cCRC, "shift_rows", cr_c_shift_rows, 1);
     rb_define_module_function(cCRC, "inv_shift_rows", cr_c_inv_shift_rows, 1);
+    rb_define_module_function(cCRC, "round0", cr_c_round0, 2);
+    rb_define_module_function(cCRC, "roundn", cr_c_roundn, 2);
+    rb_define_module_function(cCRC, "inv_roundn", cr_c_inv_roundn, 2);
+    rb_define_module_function(cCRC, "roundl", cr_c_roundl, 2);
+    rb_define_module_function(cCRC, "inv_roundl", cr_c_inv_roundl, 2);
     make_dot_cache();
     make_sbox_caches();
     make_round_constants();
