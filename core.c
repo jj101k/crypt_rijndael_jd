@@ -155,20 +155,6 @@ unsigned char sbox(unsigned char b) {
     return result^c;
 }
 
- /*
- * 'sbox' stands for 'Substitution box' here. This is the part of the cipher
- * that tries to ensure that the output doesn't have bytes in common with the
- * input.
- *
- * Don't use this function. It's here for debugging purposes.
- */ 
-
-static VALUE cr_c_sbox(VALUE self, VALUE b) {
-       unsigned char b_int=(unsigned char)NUM2INT(b);
-       b_int=sbox(b_int);
-       return INT2FIX(b_int);
-}
-
 /*
  * Caches because the above functions take an age (in CPU operations terms)
  * to do. And hey, we can spare 520-528 bytes, right? Of course we can.
@@ -351,36 +337,6 @@ unsigned char *inverse_mix_columns(unsigned char *in_block, unsigned char block_
 }
 
 /*
- * This is basically just a matrix operation in GF(2**8).
- * Each column is run through the matrix.
- *
- * This is the part of the cipher that performs "bit diffusion".
- */
-static VALUE cr_c_mix_column(VALUE self, VALUE in_block) {
-    volatile VALUE str=in_block;
-    unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(unsigned char));
-    memcpy(p, RSTRING(str)->ptr, RSTRING(str)->len);
-    mix_columns(p, RSTRING(str)->len/COLUMN_SIZE);
-    VALUE out_str=rb_str_new((char *)p, RSTRING(str)->len);
-    free(p);
-    return out_str;
-}
-
-/*
- * As with mix_column() except it uses an inverted matrix.
- */
- 
-static VALUE cr_c_inverse_mix_column(VALUE self, VALUE in_block) {
-    volatile VALUE str=in_block;
-    unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(unsigned char));
-    memcpy(p, RSTRING(str)->ptr, RSTRING(str)->len);
-    inverse_mix_columns(p, RSTRING(str)->len/COLUMN_SIZE);
-    VALUE out_str=rb_str_new((char *)p, RSTRING(str)->len);
-    free(p);
-    return out_str;
-}
-
-/*
  * This is used to expand the key to blocklen*(rounds+1) bits
  */
 static VALUE expand_key(VALUE self, VALUE block_len) {
@@ -539,12 +495,6 @@ char * shift_rows(char *state_b, size_t length_b) {
 		state_o[i] = state_b[shiftrow_map[length_w][i]];
 	return state_o;
 }
-VALUE cr_c_shift_rows(VALUE self, VALUE state_b) {
-	unsigned char length_b = RSTRING(state_b)->len;
-	char *state_o_c = shift_rows(RSTRING(state_b)->ptr, length_b);
-	VALUE state_o = rb_str_new((char *)state_o_c, length_b);
-	return state_o;
-}
 
 char *inverse_shift_rows(char *state_b, size_t length_b) {
 	unsigned char length_w = length_b/4;
@@ -555,25 +505,30 @@ char *inverse_shift_rows(char *state_b, size_t length_b) {
 	return state_o;
 }
 
-VALUE cr_c_inv_shift_rows(VALUE self, VALUE state_b) {
-	unsigned char length_b = RSTRING(state_b)->len;
-	char *state_o_c = inverse_shift_rows(RSTRING(state_b)->ptr, length_b);
-	VALUE state_o = rb_str_new((char *)state_o_c, length_b);
-	return state_o;
-}
-
 VALUE cr_c_roundn(VALUE self, VALUE input, VALUE round_key) {
-	input = cr_c_sbox_block(self, input);
-	input = cr_c_shift_rows(self, input);
-	input = cr_c_mix_column(self, input);
-	return cr_c_round0(self, input, round_key);
+	unsigned char length_b = RSTRING(input)->len;
+	char *input_bytes = (char *)(RSTRING(input)->ptr);
+	char *round_key_bytes = (char *)(RSTRING(round_key)->ptr);
+
+	char *updated_block = (char *)sbox_block((unsigned char *)input_bytes, length_b);
+	updated_block = shift_rows(updated_block, length_b);
+	updated_block = (char *)mix_columns((unsigned char *)updated_block, length_b / 4);
+
+	updated_block = (char *)round0((uint32_t *)updated_block, (uint32_t *)round_key_bytes, length_b / 4);
+	input = rb_str_new(updated_block, length_b);
+	return input;
 }
 
 VALUE cr_c_inv_roundn(VALUE self, VALUE input, VALUE round_key) {
-	input = cr_c_round0(self, input, round_key);
-	input = cr_c_inverse_mix_column(self, input);
-	input = cr_c_inv_shift_rows(self, input);
-	input = cr_c_inverse_sbox_block(self, input);
+	unsigned char length_b = RSTRING(input)->len;
+	char *input_bytes = (char *)(RSTRING(input)->ptr);
+	char *round_key_bytes = (char *)(RSTRING(round_key)->ptr);
+
+	char *updated_block = (char *)round0((uint32_t *)input_bytes, (uint32_t *)round_key_bytes, length_b / 4);
+	updated_block = (char *)inverse_mix_columns((unsigned char *)updated_block, length_b / 4);
+	updated_block = inverse_shift_rows(updated_block, length_b);
+	updated_block = (char *)inverse_sbox_block((unsigned char *)updated_block, length_b);
+	input = rb_str_new(updated_block, length_b);
 	return input;
 }
 
@@ -609,14 +564,9 @@ void Init_core() {
     VALUE cCR=rb_define_class_under(cCrypt, "Rijndael", rb_cObject);
     VALUE cCRC=rb_define_class_under(cCR, "Core", rb_cObject);
 		/* Used functions are: sbox_block dot *round* */
-    rb_define_module_function(cCRC, "mix_column", cr_c_mix_column, 1);
-    rb_define_module_function(cCRC, "inv_mix_column", cr_c_inverse_mix_column, 1);
     rb_define_module_function(cCRC, "sbox_block", cr_c_sbox_block, 1);
-    rb_define_module_function(cCRC, "sbox", cr_c_sbox, 1);
     rb_define_module_function(cCRC, "inv_sbox_block", cr_c_inverse_sbox_block, 1);
     rb_define_module_function(cCRC, "dot", cr_c_dot, 2);
-    rb_define_module_function(cCRC, "shift_rows", cr_c_shift_rows, 1);
-    rb_define_module_function(cCRC, "inv_shift_rows", cr_c_inv_shift_rows, 1);
     rb_define_module_function(cCRC, "round0", cr_c_round0, 2);
     rb_define_module_function(cCRC, "roundn", cr_c_roundn, 2);
     rb_define_module_function(cCRC, "inv_roundn", cr_c_inv_roundn, 2);
