@@ -51,7 +51,8 @@ high importance for you.
 				def block=(new_block) #:nodoc:
 					if(new_block.length != @current_block_length) then
 						raise "Invalid block size: #{new_block.length}" unless(block_sizes_supported.find { |size| size==new_block.length })
-						@block_words = new_block.length / 4
+						@current_block_length = new_block.length
+						@block_words = @current_block_length / 4
 						@expanded_key = nil
 						@round_count = nil
 					end
@@ -225,7 +226,7 @@ high importance for you.
         end
 
         def expand_key #:nodoc:
-            return @expanded_key if(defined? @expanded_key and @expanded_key)
+            return @expanded_key if(@expanded_key)
             @expanded_key=(@key_words>6)?expand_key_gt6:
                 expand_key_le6
             return @expanded_key
