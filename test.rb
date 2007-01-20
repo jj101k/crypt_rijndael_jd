@@ -125,6 +125,7 @@ end
 	begin
 		cipher_aes.blocksize=32
 		puts "Failure"
+		exit 0
 	rescue RuntimeError
 		puts "Success"
 	end
