@@ -467,7 +467,6 @@ void make_shiftrow_map() {
 		char row_len_bytes = row_len*4*sizeof(char);
 		char *state_b = malloc(row_len_bytes);
 		memcpy(state_b, zero_to_n, row_len_bytes);
-		printf("%i\n", row_len_bytes);
 		char col_len = 4;
 		char *displacements = shift_for_block_len[i].row_numbers;
 		for(j=0; j<col_len; j++) {
