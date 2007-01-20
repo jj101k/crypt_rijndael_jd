@@ -583,9 +583,13 @@ VALUE cr_c_roundl(VALUE self, VALUE input, VALUE round_key) {
 }
 
 VALUE cr_c_inv_roundl(VALUE self, VALUE input, VALUE round_key) {
-	input = cr_c_round0(self, input, round_key);
-	input = cr_c_inverse_sbox_block(self, input);
-	input = cr_c_inv_shift_rows(self, input);
+	unsigned char length_b = RSTRING(input)->len;
+	uint32_t *input_words = (uint32_t *)(RSTRING(input)->ptr);
+	uint32_t *round_key_words = (uint32_t *)(RSTRING(round_key)->ptr);
+	char *updated_block = (char *)round0(input_words, round_key_words, length_b / 4);
+	updated_block = (char *)inverse_sbox_block((unsigned char *)updated_block, length_b);
+	updated_block = inverse_shift_rows(updated_block, length_b);
+	input = rb_str_new(updated_block, length_b);
 	return input;
 }
 
@@ -597,6 +601,7 @@ void Init_core() {
     VALUE cCrypt=rb_define_class("Crypt", rb_cObject);
     VALUE cCR=rb_define_class_under(cCrypt, "Rijndael", rb_cObject);
     VALUE cCRC=rb_define_class_under(cCR, "Core", rb_cObject);
+		/* Used functions are: sbox_block dot *round* */
     rb_define_module_function(cCRC, "mix_column", cr_c_mix_column, 1);
     rb_define_module_function(cCRC, "inv_mix_column", cr_c_inverse_mix_column, 1);
     rb_define_module_function(cCRC, "sbox_block", cr_c_sbox_block, 1);
