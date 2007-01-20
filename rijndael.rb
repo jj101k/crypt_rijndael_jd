@@ -43,6 +43,7 @@ high importance for you.
 					raise "Invalid key length: #{new_key.length}" unless(self.class.key_sizes_supported.find {|size| size==new_key.length})
 					@key = new_key
 					@key_words=@key.length/4
+					@expanded_key = nil
 					@round_count = nil
 				end
 
