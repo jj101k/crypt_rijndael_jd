@@ -186,10 +186,9 @@ void make_sbox_caches() {
     }
 }
 
-// malloc() but no free(), if 'p' is null
-unsigned char *sbox_block(unsigned char *i_p, unsigned int length, unsigned char *p) {
+unsigned char *sbox_block(unsigned char *i_p, unsigned int length) {
     int i;
-    if(!p) p=(unsigned char *)malloc(length*sizeof(unsigned char));
+		static unsigned char p[MAX_BLOCK_WORDS* 4];
     for(i=0;i<length;i++) {
         p[i]=sbox_cache[i_p[i]];
     }
@@ -206,12 +205,10 @@ static VALUE cr_c_sbox_block(VALUE self, VALUE str) {
     int i;
     unsigned char *i_p=(unsigned char *)RSTRING(str)->ptr;
     unsigned int length = RSTRING(str)->len;
-    unsigned char *p=(unsigned char *)malloc(length*sizeof(unsigned char));
 
-	sbox_block(i_p, length, p);
+		unsigned char *p = sbox_block(i_p, length);
 
     VALUE out_str=rb_str_new((char *)p, RSTRING(str)->len);
-    free(p);
     return out_str;
 }
 
@@ -413,7 +410,8 @@ static VALUE expand_key(VALUE self, VALUE block_len) {
 				p_temp[1]=p_temp[2];
 				p_temp[2]=p_temp[3];
 				p_temp[3]=t_byte;
-				p_temp = sbox_block(p_temp, 4, p_temp);
+				p_temp = sbox_block(p_temp, 4);
+				memcpy(&n_temp, p_temp, sizeof(n_temp));
 				n_temp^=p_round_constant[i/key_len_w];
 			}
 			expanded_key_words[i] = n_temp^expanded_key_words[i-key_len_w];
@@ -433,7 +431,8 @@ static VALUE expand_key(VALUE self, VALUE block_len) {
 				n_temp^=p_round_constant[i/key_len_w];
 			} else if(i % key_len_w == 4) {
 				// sbox
-				sbox_block((unsigned char *)n_temp, 4, (unsigned char *)n_temp);
+				unsigned char *p_temp = sbox_block((unsigned char *)n_temp, 4);
+				memcpy(&n_temp, p_temp, sizeof(n_temp));
 			}
 			expanded_key_words[i] = n_temp^expanded_key_words[i-key_len_w];
 		}	
@@ -532,16 +531,18 @@ VALUE cr_c_round0(VALUE self, VALUE input, VALUE round_key) {
 	return output_s;
 }
 
-VALUE cr_c_shift_rows(VALUE self, VALUE state_b) {
-	unsigned char length_b = RSTRING(state_b)->len;
+char * shift_rows(char *state_b, size_t length_b) {
 	unsigned char length_w = length_b/4;
-	/* This does a copy */
-	VALUE state_o = rb_str_new((char *)state_b, length_b);
-	char *state_o_c = RSTRING(state_o)->ptr;
-	char *state_b_c = RSTRING(state_b)->ptr;
+	static char state_o[MAX_BLOCK_WORDS * 4];
 	int i;
 	for(i=0; i<length_b; i++) 
-		state_o_c[i] = state_b_c[shiftrow_map[length_w][i]];
+		state_o[i] = state_b[shiftrow_map[length_w][i]];
+	return state_o;
+}
+VALUE cr_c_shift_rows(VALUE self, VALUE state_b) {
+	unsigned char length_b = RSTRING(state_b)->len;
+	char *state_o_c = shift_rows(RSTRING(state_b)->ptr, length_b);
+	VALUE state_o = rb_str_new((char *)state_o_c, length_b);
 	return state_o;
 }
 
@@ -577,9 +578,15 @@ VALUE cr_c_inv_roundn(VALUE self, VALUE input, VALUE round_key) {
 }
 
 VALUE cr_c_roundl(VALUE self, VALUE input, VALUE round_key) {
-	input = cr_c_sbox_block(self, input);
-	input = cr_c_shift_rows(self, input);
-	return cr_c_round0(self, input, round_key);
+	unsigned char length_b = RSTRING(input)->len;
+	char *input_bytes = (char *)(RSTRING(input)->ptr);
+	char *round_key_bytes = (char *)(RSTRING(round_key)->ptr);
+
+	char *updated_block = (char *)sbox_block((unsigned char *)input_bytes, length_b);
+	updated_block = shift_rows(updated_block, length_b);
+	updated_block = (char *)round0((uint32_t *)updated_block, (uint32_t *)round_key_bytes, length_b / 4);
+	input = rb_str_new(updated_block, length_b);
+	return input;
 }
 
 VALUE cr_c_inv_roundl(VALUE self, VALUE input, VALUE round_key) {
