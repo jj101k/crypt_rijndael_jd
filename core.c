@@ -478,6 +478,7 @@ uint32_t *round0(uint32_t *input_words, uint32_t *round_key_words, unsigned char
 	return output_words;
 }
 
+/* :nodoc: */
 VALUE cr_c_round0(VALUE self, VALUE input, VALUE round_key) {
 	unsigned char length_w = RSTRING(input)->len/4;
 	uint32_t *input_words = (uint32_t *)(RSTRING(input)->ptr);
@@ -505,6 +506,7 @@ char *inverse_shift_rows(char *state_b, size_t length_b) {
 	return state_o;
 }
 
+/* :nodoc: */
 VALUE cr_c_roundn(VALUE self, VALUE input, VALUE round_key) {
 	unsigned char length_b = RSTRING(input)->len;
 	char *input_bytes = (char *)(RSTRING(input)->ptr);
@@ -519,6 +521,7 @@ VALUE cr_c_roundn(VALUE self, VALUE input, VALUE round_key) {
 	return input;
 }
 
+/* :nodoc: */
 VALUE cr_c_inv_roundn(VALUE self, VALUE input, VALUE round_key) {
 	unsigned char length_b = RSTRING(input)->len;
 	char *input_bytes = (char *)(RSTRING(input)->ptr);
@@ -532,6 +535,7 @@ VALUE cr_c_inv_roundn(VALUE self, VALUE input, VALUE round_key) {
 	return input;
 }
 
+/* :nodoc: */
 VALUE cr_c_roundl(VALUE self, VALUE input, VALUE round_key) {
 	unsigned char length_b = RSTRING(input)->len;
 	char *input_bytes = (char *)(RSTRING(input)->ptr);
@@ -544,6 +548,7 @@ VALUE cr_c_roundl(VALUE self, VALUE input, VALUE round_key) {
 	return input;
 }
 
+/* :nodoc: */
 VALUE cr_c_inv_roundl(VALUE self, VALUE input, VALUE round_key) {
 	unsigned char length_b = RSTRING(input)->len;
 	uint32_t *input_words = (uint32_t *)(RSTRING(input)->ptr);

@@ -7,16 +7,20 @@ unless(defined? Crypt::Rijndael::Core)
 end
 
 class Crypt
-    class Rijndael
-
 =begin rdoc
 Crypt::Rijndael allows you to encrypt single blocks of data using the encrypt() and decrypt() methods
-below. For convenience, there are also simple CBC encryption wrappers here, although they don't really
-belong in this class.
+below.
+
+You probably want to use some kind of CBC module with this.
 =end
+    class Rijndael
+
     
-        DEFAULT_KEYSIZE_BYTES=16
-        DEFAULT_BLOCKSIZE_BYTES=16
+        @@rounds_by_block_size={
+            4=>10,
+            6=>12,
+            8=>14
+        }
         
         @@valid_blocksizes_bytes=[16, 24, 32]
         @@valid_keysizes_bytes=[16, 24, 32]
@@ -27,47 +31,71 @@ are 16, 24 or 32 bytes, and you should ensure that this value is sufficiently ra
 choose 16-byte (128-bit) keys, but a longer key will take longer to crack if security is of unusually
 high importance for you.
 =end
-        def initialize(key)
-            raise "Invalid key length" unless(@@valid_keysizes_bytes.find {|size| size==key.length})
-            @key=key
-            @key_words=@key.length/4
-            @block_words=DEFAULT_BLOCKSIZE_BYTES/4
+        def initialize(new_key)
+ 						self.key = new_key
+						@current_block_length = nil # This makes it easier to adjust in #block=
         end
-        
-        def blocksize=(isize) #:nodoc:
-            if(@@valid_blocksizes_bytes.find { |size| size==isize })
-                @block_words=isize/4
-                @expanded_key=nil
-                return self
-            else
-                raise "Invalid block size selected: #{isize}"
-            end
+
+				attr_reader :key
+
+				# If you want to, you can assign a new key to an existing object.
+				def key=(new_key)
+					raise "Invalid key length: #{new_key.length}" unless(self.class.key_sizes_supported.find {|size| size==new_key.length})
+					@key = new_key
+					@key_words=@key.length/4
+				end
+
+				attr_reader :block
+				def block=(new_block) #:nodoc:
+					if(new_block.length != @current_block_length) then
+						raise "Invalid block size: #{new_block.length}" unless(block_sizes_supported.find { |size| size==new_block.length })
+						@block_words = new_block.length / 4
+						@expanded_key = nil
+					end
+					@block = new_block
+				end
+				protected :block=, :block, :key
+
+				# If you want to probe for supported block sizes, by all means use this method. It'll raise
+				# if the value isn't supported.
+				#
+				# Don't use this: #block_sizes_supported is better.
+        def blocksize=(block_size_bytes)
+						self.block = "\x00" * block_size_bytes
+						self
         end
-        
-        def keysize #:nodoc:
-            return @key.length
-        end
-        
-        def blocksize #:nodoc:
+
+				# This lets you know how big a block is currently being used.
+				# There's probably no point using this.
+        def blocksize
             return @block_words*4
         end
+
+				# Provides a list of block sizes (bytes) which are supported
+				def self.block_sizes_supported
+					@@valid_blocksizes_bytes
+				end
+
+				# Provides a list of key sizes (bytes) which are supported
+				def self.key_sizes_supported
+					@@valid_keysizes_bytes
+				end
+        
+				# This just calls the class' .block_sizes_supported method for you.
+				def block_sizes_supported
+					self.class.block_sizes_supported
+				end
         
         
-        ROUNDS_BY_BLOCK_SIZE={
-            4=>10,
-            6=>12,
-            8=>14
-        }
-        
-        def _round_count #:nodoc:
+        def round_count #:nodoc:
             biggest_words=if(@block_words > @key_words)
                 @block_words
             else
                 @key_words
             end
-            return ROUNDS_BY_BLOCK_SIZE[biggest_words]
+            return @@rounds_by_block_size[biggest_words]
         end
-				def round_constants
+				def round_constants #:nodoc:
 						@@round_constants ||= {}
 						@@round_constants[@block_words] ||= {}
 						unless(@@round_constants[@block_words][@key_words]) then
@@ -75,7 +103,7 @@ high importance for you.
 							p_round_constant=[0,1].map {|i| [i, 0, 0, 0].pack("C*")}
 							
 							p_round_constant+=
-							(2 .. (@block_words * (_round_count + 1)/@key_words).to_i).to_a.map {
+							(2 .. (@block_words * (round_count + 1)/@key_words).to_i).to_a.map {
 									#0x1000000<<($_-1)
 									[(temp_v=Core.dot(02,temp_v)),0,0,0].pack("C*")
 							}
@@ -88,12 +116,12 @@ high importance for you.
 					# For short (128-bit, 192-bit) keys this is used to expand the key to blocklen*(rounds+1) bits
             p "Expanding key" if $DEBUG
             
-            #expanded_key=@key;
-            ek_words=@key.unpack("N*").map {|number| Crypt::ByteStream.new([number].pack("N"))}
+            #expanded_key=key;
+            ek_words=key.unpack("N*").map {|number| Crypt::ByteStream.new([number].pack("N"))}
         
 						p_round_constant = round_constants
         
-            rounds=_round_count
+            rounds=round_count
             
             if($DEBUG) 
                 (0 .. @key_words-1).each do
@@ -142,12 +170,12 @@ high importance for you.
 					# For long (256-bit) keys this is used to expand the key to blocklen*(rounds+1) bits
             p "Expanding key (large)" if $DEBUG
             
-            #expanded_key=@key
-            ek_words=@key.unpack("N*").map {|number| Crypt::ByteStream.new([number].pack("N"))}
+            #expanded_key=key
+            ek_words=key.unpack("N*").map {|number| Crypt::ByteStream.new([number].pack("N"))}
         
 						p_round_constant = round_constants
 
-            rounds=_round_count
+            rounds=round_count
 
             if($DEBUG) 
                 (0 .. @key_words-1).each do
@@ -198,6 +226,8 @@ high importance for you.
                 expand_key_le6
             return @expanded_key
         end
+
+protected :round_count, :round_constants, :expand_key_le6, :expand_key_gt6, :expand_key
         
 =begin rdoc
 Your main entry point. You must provide an input string of a valid length - if not, it'll +raise+.
@@ -206,23 +236,21 @@ Valid lengths are 16, 24 or 32 bytes, and it will pick the block size based on t
 The output is a Crypt::ByteStream object, which is to say more-or-less a String.
 =end
         def encrypt(plaintext)
-						if(plaintext.length!=@block_words*4)
-							raise "Not a valid block size: #{plaintext.length}" unless self.blocksize=plaintext.length
-						end
-            rounds=_round_count()
+						self.block = plaintext
+
+            rounds=round_count
             expanded_key=expand_key()
-            state=plaintext
             
             blockl_b=@block_words*4
-            #puts "m #{state.length}"
-            state=Core.round0(state, expanded_key[0])
+            #puts "m #{block.length}"
+            self.block=Core.round0(block, expanded_key[0])
             (1 .. rounds-1).each do 
                 |current_round|
                 puts "n #{current_round}" if $DEBUG
                 p expanded_key[current_round] if $DEBUG
-                state=Core.roundn(state, expanded_key[current_round])
+                self.block=Core.roundn(block, expanded_key[current_round])
             end
-            return Core.roundl(state, expanded_key[rounds])
+            return Core.roundl(block, expanded_key[rounds])
         end
         
 =begin rdoc
@@ -233,27 +261,23 @@ Of course, if the string to decrypt is of invalid length then you've got other p
 The output is a Crypt::ByteStream object, which is to say more-or-less a String.
 =end
         def decrypt(ciphertext)
-						if(ciphertext.length!=@block_words*4)
-							raise "Not a valid block size: #{ciphertext.length}" unless self.blocksize=ciphertext.length
-						end
-            rounds=_round_count()
+						self.block = ciphertext
+            rounds=round_count
             expanded_key=expand_key()
-            state=ciphertext
             
             blockl_b=@block_words*4
-            state=Core.inv_roundl(state, expanded_key[rounds])
+            self.block=Core.inv_roundl(block, expanded_key[rounds])
             (1 .. rounds-1).to_a.reverse.each do 
                 |current_round|
                 #puts "n #{current_round}"
-                state=Core.inv_roundn(state, expanded_key[current_round])
+                self.block=Core.inv_roundn(block, expanded_key[current_round])
             end
-            decrypted=Core.round0(state, expanded_key[0])
+            decrypted=Core.round0(block, expanded_key[0])
             #p "decrypted: #{decrypted}" if $VERBOSE
             return decrypted
         end
     end
 
-    class AES < Rijndael
 =begin rdoc
 This is exactly the same as Crypt::Rijndael except that the only allowed block size is 128-bit (16 bytes
 ), which affects possible IV (for CBC and other block-chaining algorithms) and plaintext block lengths.
@@ -264,15 +288,12 @@ use Crypt::Rijndael for decryption in that circumstance.
 
 The spec for this is in an US government standards document named FIPS-197. Google for it.
 =end
+    class AES < Rijndael
         AES_BLOCKSIZE_BYTES=16
 
-        def blocksize=(isize) #:nodoc:
-            if(AES_BLOCKSIZE_BYTES==isize)
-                # Nothing to do
-                return self
-            else
-               raise "Invalid block size '#{isize}': only #{AES_BLOCKSIZE_BYTES} is valid" 
-            end
-        end
+				# Only one block size is supported for real AES: 16 bytes.
+				def self.block_sizes_supported
+					[AES_BLOCKSIZE_BYTES]
+				end
     end
 end
