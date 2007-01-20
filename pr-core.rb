@@ -1,6 +1,72 @@
 class Crypt
     class Rijndael
-        class Core
+					class Core
+
+						def self.make_shiftrow_map  #:nodoc:
+							shift_for_block_len={
+								4=>[0,1,2,3],
+								6=>[0,1,2,3],
+								8=>[0,1,3,4],
+							}
+								@@inv_shiftrow_map=(0 .. 0xff).map {Array.new}
+								@@shiftrow_map=(0 .. 0xff).map {Array.new}  
+								shift_for_block_len.keys.each do
+										|block_len|
+										row_len=block_len;
+										state_b=(0 .. (row_len*4)-1).to_a;
+										col_len=4;
+										c=shift_for_block_len[block_len];
+										(0 .. c.length-1).each do
+												|row_n| 
+												# Grab the lossage first
+												next unless c[row_n] > 0;
+												d1=Array.new
+												d2=Array.new
+												(row_len-c[row_n] .. row_len-1).map {|col| row_n+col_len*col}.each do
+														|offset|
+														d1+=state_b[offset,1]
+												end 
+												(0 .. row_len-c[row_n]-1).map {|col| row_n+col_len*col}.each do
+														|offset|
+														d2+=state_b[offset,1]
+												end  
+												
+									(0 .. row_len-1).map {|col| row_n+col_len*col}.each do
+														|offset|
+														state_b[offset]=d1.shift||d2.shift
+												end
+										end
+										@@inv_shiftrow_map[block_len]=state_b;
+										(0 .. state_b.length-1).each do
+												|offset|
+												@@shiftrow_map[block_len][state_b[offset]]=offset;
+										end
+								end
+						end
+						
+						make_shiftrow_map
+
+						def self.shift_rows(state_b) #:nodoc:
+							row_len=state_b.length/4
+							
+							state_o=@@shiftrow_map[row_len].map do
+								|offset|
+								state_b[offset]
+							end
+							return state_o.pack("C*")
+						end
+						
+						def self.inv_shift_rows(state_b) #:nodoc:
+							col_len=4;
+							row_len=state_b.length/4;
+							
+								state_o=@@inv_shiftrow_map[row_len].map do
+										|offset|
+										state_b[offset]
+								end
+								return state_o.pack("C*")
+						end
+						
 
             POLYNOMIAL_SPACE=0x11b
 						COLUMN_SIZE=4

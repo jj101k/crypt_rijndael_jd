@@ -440,6 +440,69 @@ static VALUE expand_key(VALUE self, VALUE block_len) {
 	return expanded_key_s;
 }
 
+struct sbl {
+	char block_len;
+	char *row_numbers;
+};
+
+char *shiftrow_map[256];
+char *inv_shiftrow_map[256];
+
+void make_shiftrow_map() {
+	char displace_0_to_3[] = {0, 1, 2, 3};
+	char displace_0_2_4[] = {0, 1, 2, 4};
+	struct sbl shift_for_block_len[] = {
+		{4, displace_0_to_3},
+		{6, displace_0_to_3},
+		{8, displace_0_2_4}
+	};
+	char zero_to_n[256], temp_row[256];
+	int i, j, k, m;
+
+	for(i=0; i<256; i++)
+		zero_to_n[i]=i;
+	for(i=0; i<3; i++) {
+		char row_len, block_len;
+		row_len = block_len = shift_for_block_len[i].block_len;
+		char row_len_bytes = row_len*4*sizeof(char);
+		char *state_b = malloc(row_len_bytes);
+		memcpy(state_b, zero_to_n, row_len_bytes);
+		printf("%i\n", row_len_bytes);
+		char col_len = 4;
+		char *displacements = shift_for_block_len[i].row_numbers;
+		for(j=0; j<col_len; j++) {
+			/*
+			 * This shifts a column or, er, row.
+			 */
+			if(displacements[j]>0) {
+				char displacement_point = row_len - displacements[j];
+				/* 
+				 * We want the stuff after the displacement point first
+				 */
+				for(m=0, k=displacement_point; k<row_len; m++, k++)
+					temp_row[m]=state_b[j + col_len * k];
+
+				/*
+				 * ...and then the stuff before.
+				 * Thus ABCDEFG with a displacement of 2 would become
+				 * FGABCDE
+				 */
+				for(m=displacements[j], k=0; k<displacement_point; m++, k++)
+					temp_row[m]=state_b[j + col_len * k];
+
+				/*
+				 * We finally store it back in state_b
+				 */
+				for(k=0; k<row_len; k++)
+					state_b[j + col_len * k] = temp_row[k];
+			}
+		}
+		inv_shiftrow_map[block_len] = state_b;
+		shiftrow_map[block_len] = malloc(row_len_bytes);
+		for(j=0; j<row_len_bytes; j++)
+			shiftrow_map[block_len][state_b[j]] = j;
+	}
+}
 void make_round_constants() {
 	unsigned char round_constants_needed = MAX_ROUND_CONSTANTS_NEEDED;
 	unsigned char temp_v;
@@ -462,6 +525,32 @@ VALUE cr_c_round0(VALUE self, VALUE input, VALUE round_key) {
 	return output_s;
 }
 
+VALUE cr_c_shift_rows(VALUE self, VALUE state_b) {
+	unsigned char length_b = RSTRING(state_b)->len;
+	unsigned char length_w = length_b/4;
+	/* This does a copy */
+	VALUE state_o = rb_str_new((char *)state_b, length_b);
+	char *state_o_c = RSTRING(state_o)->ptr;
+	char *state_b_c = RSTRING(state_b)->ptr;
+	int i;
+	for(i=0; i<length_b; i++) 
+		state_o_c[i] = state_b_c[shiftrow_map[length_w][i]];
+	return state_o;
+}
+
+VALUE cr_c_inv_shift_rows(VALUE self, VALUE state_b) {
+	unsigned char length_b = RSTRING(state_b)->len;
+	unsigned char length_w = length_b/4;
+	/* This does a copy */
+	VALUE state_o = rb_str_new((char *)state_b, length_b);
+	char *state_o_c = RSTRING(state_o)->ptr;
+	char *state_b_c = RSTRING(state_b)->ptr;
+	int i;
+	for(i=0; i<length_b; i++) 
+		state_o_c[i] = state_b_c[inv_shiftrow_map[length_w][i]];
+	return state_o;
+}
+
 /*
  * This class provides essential functions for Rijndael encryption that are 
  * expensive to do in Ruby and comfortably fit into C-style procedural code.
@@ -476,7 +565,10 @@ void Init_core() {
     rb_define_module_function(cCRC, "sbox", cr_c_sbox, 1);
     rb_define_module_function(cCRC, "inv_sbox_block", cr_c_inverse_sbox_block, 1);
     rb_define_module_function(cCRC, "dot", cr_c_dot, 2);
+    rb_define_module_function(cCRC, "shift_rows", cr_c_shift_rows, 1);
+    rb_define_module_function(cCRC, "inv_shift_rows", cr_c_inv_shift_rows, 1);
     make_dot_cache();
     make_sbox_caches();
     make_round_constants();
+		make_shiftrow_map();
 }
