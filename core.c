@@ -215,19 +215,22 @@ static VALUE cr_c_sbox_block(VALUE self, VALUE str) {
     return out_str;
 }
 
+unsigned char *inverse_sbox_block(unsigned char *i_p, size_t len) {
+	int i;
+	static unsigned char p[MAX_BLOCK_WORDS*4];
+	for(i=0;i<len;i++) {
+		p[i]=inv_sbox_cache[i_p[i]];
+	}
+	return p;
+}
+
 /*
  * Reverses the above operation, for decryption purposes.
  */
 
 static VALUE cr_c_inverse_sbox_block(VALUE self, VALUE str) {
-    int i;
-    unsigned char *i_p=(unsigned char *)RSTRING(str)->ptr;
-    unsigned char *p=(unsigned char *)malloc(RSTRING(str)->len*sizeof(unsigned char));
-    for(i=0;i<RSTRING(str)->len;i++) {
-        p[i]=inv_sbox_cache[i_p[i]];
-    }
-    VALUE out_str=rb_str_new((char *)p, RSTRING(str)->len);
-    free(p);
+    char *p = (char *)inverse_sbox_block((unsigned char *)RSTRING(str)->ptr, RSTRING(str)->len);
+    VALUE out_str=rb_str_new(p, RSTRING(str)->len);
     return out_str;
 }
 
