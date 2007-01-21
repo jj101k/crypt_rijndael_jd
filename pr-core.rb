@@ -1,6 +1,146 @@
 class Crypt
     class Rijndael
 					class Core
+						@@rounds_by_block_size={
+								4=>10,
+								6=>12,
+								8=>14
+						}
+						def self.round_count(block_words, key_words) #:nodoc:
+								return @round_count if @round_count
+								biggest_words=if(block_words > key_words)
+										block_words
+								else
+										key_words
+								end
+								@@rounds_by_block_size[biggest_words]
+						end
+						def self.round_constants(block_words, key_words) #:nodoc:
+								@@round_constants ||= {}
+								@@round_constants[block_words] ||= {}
+								unless(@@round_constants[block_words][key_words]) then
+									temp_v=1
+									p_round_constant=[0,1].map {|i| [i, 0, 0, 0].pack("C*")}
+									
+									p_round_constant+=
+									(2 .. (block_words * (round_count(block_words, key_words) + 1)/key_words).to_i).to_a.map {
+											#0x1000000<<($_-1)
+											[(temp_v=Core.dot(02,temp_v)),0,0,0].pack("C*")
+									}
+									@@round_constants[block_words][key_words] = p_round_constant
+								end
+								@@round_constants[block_words][key_words]
+						end
+						def self.expand_key_le6(key, block_words) #:nodoc
+							# For short (128-bit, 192-bit) keys this is used to expand the key to blocklen*(rounds+1) bits
+								p "Expanding key" if $DEBUG
+								
+								#expanded_key=key;
+								ek_words=key.unpack("N*").map {|number| Crypt::ByteStream.new([number].pack("N"))}
+						
+								key_words = key.length / 4
+								p_round_constant = round_constants(block_words, key_words)
+						
+								rounds=round_count(block_words, key_words)
+								
+								if($DEBUG) 
+										(0 .. key_words-1).each do
+												|i|
+												p "w#{i} = #{ek_words[i].to_x}"
+										end
+								end
+								
+								(key_words .. block_words * (rounds + 1)-1).each do
+										|i|
+										p "i = #{i}" if $DEBUG
+
+										p_temp=ek_words[i-1]
+										
+										p sprintf("%.8x (temp)", p_temp.to_x) if $DEBUG
+										
+										if(i % key_words == 0) 
+												
+														t_byte=p_temp[0]
+														p_temp[0 .. 2]=p_temp[1 .. 3]
+														p_temp[3]=t_byte
+												p sprintf("%.8x (RotWord)", p_temp.to_x) if $DEBUG        
+												
+												# tr would be great here again.
+												p_temp=Crypt::ByteStream.new(Core.sbox_block(p_temp))
+												p sprintf("%.8x (SubWord)", p_temp.to_x) if $DEBUG    
+												p sprintf("%.8x (Rcon[i/Nk])", p_round_constant[(i/key_words).to_i].to_x) if $DEBUG
+												p_temp^=p_round_constant[(i/key_words).to_i]
+												p sprintf("%.8x (After XOR)", p_temp.to_x) if $DEBUG
+										end
+										p sprintf("%.8x (w[i-Nk])", ek_words[i-key_words].to_x) if $DEBUG
+										ek_words[i]=p_temp^ek_words[i-key_words]
+										p sprintf("%.8x (w[i]=temp XOR w[i-Nk])", ek_words[i].to_x) if $DEBUG
+										i+=1
+								end
+								#puts ek_words.to_s
+								expanded_key=Array(rounds+1)
+								(0 .. rounds).each do
+										|round|
+										expanded_key[round]=Crypt::ByteStream.new(ek_words[round*block_words, block_words].to_s)
+								end
+								return expanded_key; 
+						end
+										
+						def self.expand_key_gt6(key, block_words) #:nodoc:
+							# For long (256-bit) keys this is used to expand the key to blocklen*(rounds+1) bits
+								p "Expanding key (large)" if $DEBUG
+								
+								#expanded_key=key
+								ek_words=key.unpack("N*").map {|number| Crypt::ByteStream.new([number].pack("N"))}
+						
+								key_words = key.length / 4
+								p_round_constant = round_constants(block_words, key_words)
+
+								rounds=round_count(block_words, key_words)
+
+								if($DEBUG) 
+										(0 .. key_words-1).each do
+												|i|
+												p "w#{i} = #{ek_words[i].to_x}"
+										end
+								end
+						
+								(key_words .. block_words * (rounds + 1)-1).each do 
+										|i|
+										p "i = #{i}" if $DEBUG
+
+										p_temp=ek_words[i-1]
+										p sprintf("%.8x (temp)", p_temp.to_x) if $DEBUG
+										if(i % key_words == 0) 
+												
+														t_byte=p_temp[0]
+														p_temp[0 .. 2]=p_temp[1 .. 3]
+														p_temp[3]=t_byte
+												p sprintf("%.8x (RotWord)", p_temp.to_x) if $DEBUG
+						
+												# tr would be great here again.
+												p_temp=Crypt::ByteStream.new(Core.sbox_block(p_temp))
+												p sprintf("%.8x (SubWord)", p_temp.to_x) if $DEBUG
+												p sprintf("%.8x (Rcon[i/Nk])", p_round_constant[(i/key_words).to_i].to_x) if $DEBUG
+												p_temp^=p_round_constant[(i/key_words).to_i]
+												p sprintf("%.8x (After XOR)", p_temp.to_x) if $DEBUG
+											
+										elsif(i % key_words == 4) 
+												p_temp=Core.sbox_block(p_temp)
+												p sprintf("%.8x (SubWord)", p_temp.to_x) if $DEBUG
+										end
+										p sprintf("%.8x (w[i-Nk])", ek_words[i-key_words].to_x) if $DEBUG
+										ek_words[i]=ek_words[i-key_words]^p_temp
+										p sprintf("%.8x (w[i]=temp XOR w[i-Nk])", ek_words[i].to_x) if $DEBUG
+								end
+								expanded_key=Array(rounds+1)
+								(0 .. rounds).each do
+										|round|
+										expanded_key[round]=Crypt::ByteStream.new(ek_words[round*block_words, block_words].to_s)
+								end
+								return expanded_key;
+						end
+
 						def self.roundn_times(block, expanded_key, rounds, direction) #:nodoc:
 							case(direction)
 							when :forward then
@@ -19,7 +159,8 @@ class Crypt
 							block
 						end
 						def self.roundn(input, round_key) #:nodoc:
-								row_len=@block_words;
+								block_words = input.length / 4
+								row_len=block_words;
 						
 								input=sbox_block(input)
 								input=shift_rows(input)       
@@ -30,9 +171,10 @@ class Crypt
 						end
 						
 						def self.inv_roundn(input, round_key) #:nodoc:
+								block_words = input.length / 4
 								
 								input=round0(input, round_key)
-								row_len=@block_words
+								row_len=block_words
 								input=inv_mix_column(input)
 
 								
