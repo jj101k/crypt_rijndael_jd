@@ -249,12 +249,7 @@ The output is a Crypt::ByteStream object, which is to say more-or-less a String.
             blockl_b=@block_words*4
             #puts "m #{block.length}"
             tmp_block=Core.round0(block, expanded_key[0])
-            (1 .. rounds-1).each do 
-                |current_round|
-                puts "n #{current_round}" if $DEBUG
-                p expanded_key[current_round] if $DEBUG
-                tmp_block=Core.roundn(tmp_block, expanded_key[current_round])
-            end
+						tmp_block = Core.roundn_times(tmp_block, expanded_key, rounds, :forward)
             return Core.roundl(tmp_block, expanded_key[rounds])
         end
         
@@ -272,11 +267,7 @@ The output is a Crypt::ByteStream object, which is to say more-or-less a String.
             
             blockl_b=@block_words*4
             tmp_block=Core.inv_roundl(block, expanded_key[rounds])
-            (1 .. rounds-1).to_a.reverse.each do 
-                |current_round|
-                #puts "n #{current_round}"
-                tmp_block=Core.inv_roundn(tmp_block, expanded_key[current_round])
-            end
+						tmp_block = Core.roundn_times(tmp_block, expanded_key, rounds, :reverse)
             decrypted=Core.round0(tmp_block, expanded_key[0])
             #p "decrypted: #{decrypted}" if $VERBOSE
             return decrypted

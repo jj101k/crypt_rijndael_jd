@@ -506,17 +506,49 @@ char *inverse_shift_rows(char *state_b, size_t length_b) {
 	return state_o;
 }
 
+char *roundn(char *block_bytes, char *round_key_bytes, unsigned char length_b) {
+	block_bytes = (char *)sbox_block((unsigned char *)block_bytes, length_b);
+	block_bytes = shift_rows(block_bytes, length_b);
+	block_bytes = (char *)mix_columns((unsigned char *)block_bytes, length_b / 4);
+
+	block_bytes = (char *)round0((uint32_t *)block_bytes, (uint32_t *)round_key_bytes, length_b / 4);
+	return block_bytes;
+}
+char *inv_roundn(char *block_bytes, char *round_key_bytes, unsigned char length_b) {
+	block_bytes = (char *)round0((uint32_t *)block_bytes, (uint32_t *)round_key_bytes, length_b / 4);
+	block_bytes = (char *)inverse_mix_columns((unsigned char *)block_bytes, length_b / 4);
+	block_bytes = inverse_shift_rows(block_bytes, length_b);
+	block_bytes = (char *)inverse_sbox_block((unsigned char *)block_bytes, length_b);
+	return block_bytes;
+}
+
+VALUE cr_c_roundn_times(VALUE self, VALUE input, VALUE round_keys, VALUE round_count, VALUE direction) {
+	unsigned char length_b = RSTRING(input)->len;
+	char *input_bytes = (char *)(RSTRING(input)->ptr);
+	char round_count_n = NUM2CHR(round_count);
+	int i;
+	VALUE *round_key_array = RARRAY(round_keys)->ptr;
+	char *direction_name = rb_id2name(SYM2ID(direction));
+	if(!strcmp(direction_name, "reverse")) {
+		for(i=round_count_n-1; i>0; i--)
+			input_bytes = inv_roundn(input_bytes, RSTRING(round_key_array[i])->ptr, length_b);
+	} else if(!strcmp(direction_name, "forward")) {
+		for(i=1; i<round_count_n; i++)
+			input_bytes = roundn(input_bytes, RSTRING(round_key_array[i])->ptr, length_b);
+	} else {
+		return input; /* FIXME I would rather raise an exception */
+	}
+	input = rb_str_new(input_bytes, length_b);
+	return input;
+}
+
 /* :nodoc: */
 VALUE cr_c_roundn(VALUE self, VALUE input, VALUE round_key) {
 	unsigned char length_b = RSTRING(input)->len;
 	char *input_bytes = (char *)(RSTRING(input)->ptr);
 	char *round_key_bytes = (char *)(RSTRING(round_key)->ptr);
 
-	char *updated_block = (char *)sbox_block((unsigned char *)input_bytes, length_b);
-	updated_block = shift_rows(updated_block, length_b);
-	updated_block = (char *)mix_columns((unsigned char *)updated_block, length_b / 4);
-
-	updated_block = (char *)round0((uint32_t *)updated_block, (uint32_t *)round_key_bytes, length_b / 4);
+	char *updated_block = roundn(input_bytes, round_key_bytes, length_b);
 	input = rb_str_new(updated_block, length_b);
 	return input;
 }
@@ -527,10 +559,7 @@ VALUE cr_c_inv_roundn(VALUE self, VALUE input, VALUE round_key) {
 	char *input_bytes = (char *)(RSTRING(input)->ptr);
 	char *round_key_bytes = (char *)(RSTRING(round_key)->ptr);
 
-	char *updated_block = (char *)round0((uint32_t *)input_bytes, (uint32_t *)round_key_bytes, length_b / 4);
-	updated_block = (char *)inverse_mix_columns((unsigned char *)updated_block, length_b / 4);
-	updated_block = inverse_shift_rows(updated_block, length_b);
-	updated_block = (char *)inverse_sbox_block((unsigned char *)updated_block, length_b);
+	char *updated_block = inv_roundn(input_bytes, round_key_bytes, length_b);
 	input = rb_str_new(updated_block, length_b);
 	return input;
 }
@@ -577,6 +606,7 @@ void Init_core() {
     rb_define_module_function(cCRC, "inv_roundn", cr_c_inv_roundn, 2);
     rb_define_module_function(cCRC, "roundl", cr_c_roundl, 2);
     rb_define_module_function(cCRC, "inv_roundl", cr_c_inv_roundl, 2);
+		rb_define_module_function(cCRC, "roundn_times", cr_c_roundn_times, 4);
     make_dot_cache();
     make_sbox_caches();
     make_round_constants();

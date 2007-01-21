@@ -1,6 +1,23 @@
 class Crypt
     class Rijndael
 					class Core
+						def self.roundn_times(block, expanded_key, rounds, direction) #:nodoc:
+							case(direction)
+							when :forward then
+								(1 .. rounds-1).each do 
+									|current_round|
+									block=Core.roundn(block, expanded_key[current_round])
+								end
+							when :reverse then
+								(1 .. rounds-1).to_a.reverse.each do 
+										|current_round|
+										block=Core.inv_roundn(block, expanded_key[current_round])
+								end
+							else
+								raise "Unsupported round direction"
+							end
+							block
+						end
 						def self.roundn(input, round_key) #:nodoc:
 								row_len=@block_words;
 						
