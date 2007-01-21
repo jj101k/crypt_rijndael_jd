@@ -6,8 +6,8 @@ class Crypt
 								6=>12,
 								8=>14
 						}
+						
 						def self.round_count(block_words, key_words) #:nodoc:
-								return @round_count if @round_count
 								biggest_words=if(block_words > key_words)
 										block_words
 								else
