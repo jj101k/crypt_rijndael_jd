@@ -1,5 +1,6 @@
 unless(defined? Crypt::ByteStream)
 	require "crypt/bytestream"
+  Crypt::ByteStream.strict_mode = true
 end
 # This is to help testing
 unless(defined? Crypt::Rijndael::Core)
