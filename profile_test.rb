@@ -6,6 +6,6 @@ puts "Encrypting a block of text...\n";
 
 cipher=Crypt::Rijndael.new("1234567890abcdef")
 
-100.times do # This ensures we get to see the effects of caching
+1000.times do # This ensures we get to see the effects of caching
 	cipher.encrypt("This is an IV...")
 end
