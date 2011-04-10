@@ -1,5 +1,5 @@
 #!/bin/sh
-old_tag=`git describe | sed 's/-g.*//'`
+old_tag=`git describe | sed 's/-.*//'`
 echo Old tag is $old_tag
 echo New tag?
 read new_tag
