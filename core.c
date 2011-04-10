@@ -588,6 +588,69 @@ VALUE cr_c_inv_roundl(VALUE self, VALUE input, VALUE round_key) {
 	input = rb_str_new(updated_block, length_b);
 	return input;
 }
+VALUE cr_c_round_count(VALUE self, VALUE block_words, VALUE key_words) {
+	int block_words_i = NUM2INT(block_words);
+	int key_words_i = NUM2INT(key_words);
+	int biggest_words_i = (block_words_i > key_words_i) ? block_words : key_words;
+	int round_count;
+	switch(biggest_words_i) {
+	case 8:
+		round_count = 14;
+		break;
+	case 6:
+		round_count = 12;
+		break;
+	case 4:
+		round_count = 8;
+		break;
+	default:
+		round_count = 8; // FIXME I'd rather raise, of course
+	};
+	return INT2NUM(round_count);
+}
+
+/*
+ * For short (128-bit, 192-bit) keys this is used to expand the key to blocklen*(rounds+1) bits
+ */
+VALUE cr_c_expand_key_le6(VALUE self, VALUE key, VALUE block_words) {
+	int block_words_i = NUM2INT(block_words);
+	uint32_t *ek_words = RSTRING(key)->ptr;
+	char key_word_count = RSTRING(key)->len / 4;
+
+            def self.expand_key_le6(key, block_words) #:nodoc
+                p_round_constant = round_constants(block_words, key_words)
+
+                rounds=round_count(block_words, key_words)
+
+                (key_words .. block_words * (rounds + 1)-1).each do
+                    |i|
+
+                    p_temp=ek_words[i-1]
+
+
+                    if(i % key_words == 0)
+
+                            t_byte=p_temp[0]
+                            p_temp[0 .. 2]=p_temp[1 .. 3]
+                            p_temp[3]=t_byte
+
+                        # tr would be great here again.
+                        p_temp=Crypt::ByteStream.new(Core.sbox_block(p_temp))
+                        p_temp^=p_round_constant[(i/key_words).to_i]
+                    end
+                    ek_words[i]=p_temp^ek_words[i-key_words]
+                    i+=1
+                end
+                #puts ek_words.to_s
+                expanded_key=Array(rounds+1)
+                (0 .. rounds).each do
+                    |round|
+                    expanded_key[round]=Crypt::ByteStream.new(ek_words[round*block_words, block_words].to_s)
+                end
+                return expanded_key;
+            end
+
+
 
 /*
  * This class provides essential functions for Rijndael encryption that are 
@@ -607,6 +670,7 @@ void Init_core() {
     rb_define_module_function(cCRC, "roundl", cr_c_roundl, 2);
     rb_define_module_function(cCRC, "inv_roundl", cr_c_inv_roundl, 2);
 		rb_define_module_function(cCRC, "roundn_times", cr_c_roundn_times, 4);
+		rb_define_module_function(cCRC, "round_count", cr_c_round_count, 2);
     make_dot_cache();
     make_sbox_caches();
     make_round_constants();
