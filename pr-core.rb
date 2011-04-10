@@ -65,7 +65,7 @@ class Crypt
                 expanded_key=Array(rounds+1)
                 (0 .. rounds).each do
                     |round|
-                    expanded_key[round]=Crypt::ByteStream.new(ek_words[round*block_words, block_words].to_s)
+                    expanded_key[round]=Crypt::ByteStream.new(ek_words[round*block_words, block_words].join(""))
                 end
                 return expanded_key; 
             end
@@ -103,7 +103,7 @@ class Crypt
                 expanded_key=Array(rounds+1)
                 (0 .. rounds).each do
                     |round|
-                    expanded_key[round]=Crypt::ByteStream.new(ek_words[round*block_words, block_words].to_s)
+                    expanded_key[round]=Crypt::ByteStream.new(ek_words[round*block_words, block_words].join(""))
                 end
                 return expanded_key;
             end
