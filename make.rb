@@ -9,17 +9,17 @@ loop do
 	answer=STDIN.gets
 	if(answer=~/^b/i)
 			begin
-			File.rm("core.rb")
+			File.unlink("core.rb")
 			rescue Errno::ENOENT
 			end
 			require "./extconf.rb"
 			exit system(ENV["MAKE"]||"make")
 	elsif(answer=~/^r/i)
 			begin
-			File.rm("Makefile")
+			File.unlink("Makefile")
 			rescue Errno::ENOENT
 			end
-			File.copy("pr-core.rb", "core.rb")
+			FileUtils.cp("pr-core.rb", "core.rb")
 			exit
 	end
 
