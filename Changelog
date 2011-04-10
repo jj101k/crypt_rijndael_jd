@@ -1,3 +1,26 @@
+v0.9.4
+Jim A. Driscoll (6):
+      For efficiency, don't call #block= again in #encrypt or #decrypt
+      Move the roundn loop into core: should help speed a little
+      Boost the number of blocks in the profile test to get better results
+      Cleaned up pure-ruby core and moved key expansion in
+      Remove caching from Core#round_count
+      Removed some "if $DEBUG" from pr-core.rb
+
+Jim Driscoll (12):
+      Some old changes for optimisation
+      Default to a much longer test
+      Workaround for spaces in $PWD
+      Ruby 1.9 compat changes to the build process
+      Ask for 0644
+      Always ask Crypt::ByteStream for strict mode
+      Crypt::ByteStream 0.91+ compat changes
+      YARV (1.9) compat: Array#to_s tries to DWIM apparently by switching to #unpack; use #join("") instead
+      General doc update
+      Note about compatibility in the docs
+      Ignore rubinius compiled files
+      Update release tools
+
 v0.9.3
 Jim A. Driscoll:
       Finally cache the round constants
