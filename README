@@ -45,6 +45,13 @@ specific IV and key.
 If you "build" the pure-ruby core, it'll always be what the test
 script uses.
 
+COMPATIBILITY AND PERFORMANCE
+
+Ruby 1.9: Ruby core works, gets 25-30KiB/s on encryption and
+decryption on my test machine.
+
+Rubinius 1.2.3: Ruby core works, ~15KiB/s
+
 COPYRIGHT
 
 This files in this distribution (with the exception of bwulf10.txt)
