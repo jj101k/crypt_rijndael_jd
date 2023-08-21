@@ -189,12 +189,12 @@ unsigned char *sbox_block(unsigned char *i_p, unsigned int length) {
  */
 static VALUE cr_c_sbox_block(VALUE self, VALUE str) {
     int i;
-    unsigned char *i_p=(unsigned char *)RSTRING(str)->ptr;
-    unsigned int length = RSTRING(str)->len;
+    unsigned char *i_p=(unsigned char *)RSTRING_PTR(str);
+    unsigned int length = RSTRING_LEN(str);
 
 		unsigned char *p = sbox_block(i_p, length);
 
-    VALUE out_str=rb_str_new((char *)p, RSTRING(str)->len);
+    VALUE out_str=rb_str_new((char *)p, RSTRING_LEN(str));
     return out_str;
 }
 
@@ -212,8 +212,8 @@ unsigned char *inverse_sbox_block(unsigned char *i_p, size_t len) {
  */
 
 static VALUE cr_c_inverse_sbox_block(VALUE self, VALUE str) {
-    char *p = (char *)inverse_sbox_block((unsigned char *)RSTRING(str)->ptr, RSTRING(str)->len);
-    VALUE out_str=rb_str_new(p, RSTRING(str)->len);
+    char *p = (char *)inverse_sbox_block((unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str));
+    VALUE out_str=rb_str_new(p, RSTRING_LEN(str));
     return out_str;
 }
 
@@ -340,19 +340,19 @@ unsigned char *inverse_mix_columns(unsigned char *in_block, unsigned char block_
  * This is used to expand the key to blocklen*(rounds+1) bits
  */
 static VALUE expand_key(VALUE self, VALUE block_len) {
-	uint32_t key_len_b = RSTRING(rb_iv_get(self, "@key"))->len;
+	uint32_t key_len_b = RSTRING_LEN(rb_iv_get(self, "@key"));
 	uint32_t key_len_w = key_len_b/4;
-	unsigned char block_len_w = NUM2CHAR(block_len)/4;
+	unsigned int block_len_w = NUM2UINT(block_len)/4;
 	int i;
 
-	unsigned char round_constants_needed = block_len_w*
+	unsigned int round_constants_needed = block_len_w*
 		(rounds_by_block_size(bigger_number(block_len_w, key_len_w))+1)
 		/key_len_w;
 
 	uint32_t *expanded_key_words=(uint32_t *)malloc(round_constants_needed*key_len_b);
 
 	memcpy(expanded_key_words,
-		RSTRING(rb_iv_get(self, "@key"))->ptr, key_len_b);
+		RSTRING_PTR(rb_iv_get(self, "@key")), key_len_b);
 
 	if(key_len_w <= 6) {
 		// Short (128-bit and 192-bit) keys
@@ -480,9 +480,9 @@ uint32_t *round0(uint32_t *input_words, uint32_t *round_key_words, unsigned char
 
 /* :nodoc: */
 VALUE cr_c_round0(VALUE self, VALUE input, VALUE round_key) {
-	unsigned char length_w = RSTRING(input)->len/4;
-	uint32_t *input_words = (uint32_t *)(RSTRING(input)->ptr);
-	uint32_t *round_key_words = (uint32_t *)(RSTRING(round_key)->ptr);
+	unsigned char length_w = RSTRING_LEN(input)/4;
+	uint32_t *input_words = (uint32_t *)(RSTRING_PTR(input));
+	uint32_t *round_key_words = (uint32_t *)(RSTRING_PTR(round_key));
 	uint32_t *output_words = round0(input_words, round_key_words, length_w);
 	VALUE output_s = rb_str_new((char *)output_words, length_w*4);
 	return output_s;
@@ -523,18 +523,21 @@ char *inv_roundn(char *block_bytes, char *round_key_bytes, unsigned char length_
 }
 
 VALUE cr_c_roundn_times(VALUE self, VALUE input, VALUE round_keys, VALUE round_count, VALUE direction) {
-	unsigned char length_b = RSTRING(input)->len;
-	char *input_bytes = (char *)(RSTRING(input)->ptr);
+	unsigned char length_b = RSTRING_LEN(input);
+	char *input_bytes = (char *)(RSTRING_PTR(input));
 	char round_count_n = NUM2CHR(round_count);
 	int i;
-	VALUE *round_key_array = RARRAY(round_keys)->ptr;
 	char *direction_name = rb_id2name(SYM2ID(direction));
 	if(!strcmp(direction_name, "reverse")) {
-		for(i=round_count_n-1; i>0; i--)
-			input_bytes = inv_roundn(input_bytes, RSTRING(round_key_array[i])->ptr, length_b);
+		for(i=round_count_n-1; i>0; i--) {
+			VALUE f = INT2FIX(i);
+			input_bytes = inv_roundn(input_bytes, rb_ary_aref(1, &f, round_keys), length_b);
+		}
 	} else if(!strcmp(direction_name, "forward")) {
-		for(i=1; i<round_count_n; i++)
-			input_bytes = roundn(input_bytes, RSTRING(round_key_array[i])->ptr, length_b);
+		for(i=1; i<round_count_n; i++) {
+			VALUE f = INT2FIX(i);
+			input_bytes = roundn(input_bytes, rb_ary_aref(1, &f, round_keys), length_b);
+		}
 	} else {
 		return input; /* FIXME I would rather raise an exception */
 	}
@@ -544,9 +547,9 @@ VALUE cr_c_roundn_times(VALUE self, VALUE input, VALUE round_keys, VALUE round_c
 
 /* :nodoc: */
 VALUE cr_c_roundn(VALUE self, VALUE input, VALUE round_key) {
-	unsigned char length_b = RSTRING(input)->len;
-	char *input_bytes = (char *)(RSTRING(input)->ptr);
-	char *round_key_bytes = (char *)(RSTRING(round_key)->ptr);
+	unsigned char length_b = RSTRING_LEN(input);
+	char *input_bytes = (char *)(RSTRING_PTR(input));
+	char *round_key_bytes = (char *)(RSTRING_PTR(round_key));
 
 	char *updated_block = roundn(input_bytes, round_key_bytes, length_b);
 	input = rb_str_new(updated_block, length_b);
@@ -555,9 +558,9 @@ VALUE cr_c_roundn(VALUE self, VALUE input, VALUE round_key) {
 
 /* :nodoc: */
 VALUE cr_c_inv_roundn(VALUE self, VALUE input, VALUE round_key) {
-	unsigned char length_b = RSTRING(input)->len;
-	char *input_bytes = (char *)(RSTRING(input)->ptr);
-	char *round_key_bytes = (char *)(RSTRING(round_key)->ptr);
+	unsigned char length_b = RSTRING_LEN(input);
+	char *input_bytes = (char *)(RSTRING_PTR(input));
+	char *round_key_bytes = (char *)(RSTRING_PTR(round_key));
 
 	char *updated_block = inv_roundn(input_bytes, round_key_bytes, length_b);
 	input = rb_str_new(updated_block, length_b);
@@ -566,9 +569,9 @@ VALUE cr_c_inv_roundn(VALUE self, VALUE input, VALUE round_key) {
 
 /* :nodoc: */
 VALUE cr_c_roundl(VALUE self, VALUE input, VALUE round_key) {
-	unsigned char length_b = RSTRING(input)->len;
-	char *input_bytes = (char *)(RSTRING(input)->ptr);
-	char *round_key_bytes = (char *)(RSTRING(round_key)->ptr);
+	unsigned char length_b = RSTRING_LEN(input);
+	char *input_bytes = (char *)(RSTRING_PTR(input));
+	char *round_key_bytes = (char *)(RSTRING_PTR(round_key));
 
 	char *updated_block = (char *)sbox_block((unsigned char *)input_bytes, length_b);
 	updated_block = shift_rows(updated_block, length_b);
@@ -579,9 +582,9 @@ VALUE cr_c_roundl(VALUE self, VALUE input, VALUE round_key) {
 
 /* :nodoc: */
 VALUE cr_c_inv_roundl(VALUE self, VALUE input, VALUE round_key) {
-	unsigned char length_b = RSTRING(input)->len;
-	uint32_t *input_words = (uint32_t *)(RSTRING(input)->ptr);
-	uint32_t *round_key_words = (uint32_t *)(RSTRING(round_key)->ptr);
+	unsigned char length_b = RSTRING_LEN(input);
+	uint32_t *input_words = (uint32_t *)(RSTRING_PTR(input));
+	uint32_t *round_key_words = (uint32_t *)(RSTRING_PTR(round_key));
 	char *updated_block = (char *)round0(input_words, round_key_words, length_b / 4);
 	updated_block = (char *)inverse_sbox_block((unsigned char *)updated_block, length_b);
 	updated_block = inverse_shift_rows(updated_block, length_b);
@@ -614,8 +617,8 @@ VALUE cr_c_round_count(VALUE self, VALUE block_words, VALUE key_words) {
  */
 VALUE cr_c_expand_key_le6(VALUE self, VALUE key, VALUE block_words) {
 	int block_words_i = NUM2INT(block_words);
-	uint32_t *ek_words = RSTRING(key)->ptr;
-	char key_word_count = RSTRING(key)->len / 4;
+	uint32_t *ek_words = RSTRING_PTR(key);
+	char key_word_count = RSTRING_LEN(key) / 4;
 
             def self.expand_key_le6(key, block_words) #:nodoc
                 p_round_constant = round_constants(block_words, key_words)
