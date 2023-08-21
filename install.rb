@@ -1,5 +1,5 @@
 require "rbconfig.rb"
-include Config
+include RbConfig
 require "fileutils"
 include FileUtils::Verbose
 
