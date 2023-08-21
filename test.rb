@@ -2,7 +2,7 @@
 require ARGV[0]||"./core"
 require "./rijndael"
 begin
-require "crypt/cbc"
+require "jdcrypt/cbc"
 rescue LoadError
 end
 
@@ -30,14 +30,14 @@ input, rkey=[
 	0x16, 0xa6, 0x88, 0x3c
 ].pack("C*")
 
-rkey=[ 
+rkey=[
 	0xa0, 0x88, 0x23, 0x2a,
 	0xfa, 0x54, 0xa3, 0x6c,
 	0xfe, 0x2c, 0x39, 0x76,
 	0x17, 0xb1, 0x39, 0x05,
 ].pack("C*")
 
-real_key=[ 
+real_key=[
 	0x2b, 0x7e, 0x15, 0x16 ,
 	0x28, 0xae, 0xd2, 0xa6 ,
 	0xab, 0xf7, 0x15, 0x88 ,
@@ -115,7 +115,7 @@ ctexts={16=>{}, 24=>{}, 32=>{}}
 			else
 				puts "Failed.\n"
 			end
-	end	
+	end
 end
 	puts "Testing AES mode"
 	cipher_rd=Crypt::Rijndael.new(keys[16])
@@ -133,11 +133,11 @@ end
 	sample_long="This is some text that, well, basically exists only for the purpose of being long, thus forcing the usage of a block mode.\n"
 	cipher=Crypt::Rijndael.new(keys[16])
 	ctext_cbc=nil
-	if(!defined? Crypt::CBC)
-		puts "No Crypt::CBC, skipping CBC tests"
+	if(!defined? JdCrypt::CBC)
+		puts "No JdCrypt::CBC, skipping CBC tests"
 		exit
 	else
-		ctext_cbc=Crypt::CBC.new(cipher).encrypt(ivs[16], sample_long)
+		ctext_cbc=JdCrypt::CBC.new(cipher).encrypt(ivs[16], sample_long)
 	end
 
 	puts "Testing time-to-encrypt a big block of data (keeping it in core)...\n";
@@ -149,10 +149,10 @@ end
 
 	before=Time.new
 	huge_ctext=nil
-	if(!defined? Crypt::CBC)
-		puts "No Crypt::CBC, skipping"
+	if(!defined? JdCrypt::CBC)
+		puts "No JdCrypt::CBC, skipping"
 	else
-		huge_ctext=Crypt::CBC.new(cipher).encrypt(ivs[16], huge_ptext)
+		huge_ctext=JdCrypt::CBC.new(cipher).encrypt(ivs[16], huge_ptext)
 	end
 	after=Time.new
 
@@ -164,10 +164,10 @@ end
 	cipher=Crypt::AES.new(keys[16])
 	before=Time.new
 	new_huge_ptext=nil
-	if(!defined? Crypt::CBC)
-		puts "No Crypt::CBC, skipping"
+	if(!defined? JdCrypt::CBC)
+		puts "No JdCrypt::CBC, skipping"
 	else
-		new_huge_ptext=Crypt::CBC.new(cipher).decrypt(ivs[16], huge_ctext)
+		new_huge_ptext=JdCrypt::CBC.new(cipher).decrypt(ivs[16], huge_ctext)
 	end
 	after=Time.new
 
@@ -184,9 +184,9 @@ end
 				|offset|
 				if(new_huge_ptext[offset]!=huge_ptext[offset])
 					if(offset>5)
-						p "Mismatch at #{offset}: '#{new_huge_ptext[offset-5,10]}' != '#{huge_ptext[offset-5,10]}'" 
+						p "Mismatch at #{offset}: '#{new_huge_ptext[offset-5,10]}' != '#{huge_ptext[offset-5,10]}'"
 					else
-						p "Mismatch at #{offset}: '#{new_huge_ptext[0,10]}' != '#{huge_ptext[0,10]}'" 
+						p "Mismatch at #{offset}: '#{new_huge_ptext[0,10]}' != '#{huge_ptext[0,10]}'"
 					end
 				end
 			end

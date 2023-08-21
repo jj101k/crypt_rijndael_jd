@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby -rprofile
 require ARGV[0]||"./core"
 require "./rijndael"
-require "crypt/cbc"
+require "jdcrypt/cbc"
 
 puts "Encrypting a fairly big block of text...\n";
 
@@ -11,4 +11,4 @@ big_ptext = huge_ptext[0, 102400]
 
 cipher=Crypt::Rijndael.new("1234567890abcdef")
 
-big_ctext=Crypt::CBC.new(cipher).encrypt("This is an IV...", big_ptext)
+big_ctext=JdCrypt::CBC.new(cipher).encrypt("This is an IV...", big_ptext)

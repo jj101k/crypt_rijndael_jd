@@ -1,6 +1,6 @@
-unless(defined? Crypt::ByteStream)
-	require "crypt/bytestream"
-  Crypt::ByteStream.strict_mode = true
+unless(defined? JdCrypt::ByteStream)
+	require "jdcrypt/bytestream"
+  JdCrypt::ByteStream.strict_mode = true
 end
 # This is to help testing
 unless(defined? Crypt::Rijndael::Core)
@@ -16,8 +16,8 @@ You probably want to use some kind of CBC module with this.
 =end
     class Rijndael
 
-    
-        
+
+
         @@valid_blocksizes_bytes=[16, 24, 32]
         @@valid_keysizes_bytes=[16, 24, 32]
 
@@ -87,52 +87,52 @@ high importance for you.
 				def self.key_sizes_supported
 					@@valid_keysizes_bytes
 				end
-        
+
 				# This just calls the class' .block_sizes_supported method for you.
 				def block_sizes_supported
 					self.class.block_sizes_supported
 				end
-        
-        
+
+
         def round_count #:nodoc:
 						return @round_count if @round_count
 						@round_count = Core.round_count(@block_words, @key_words)
         end
-        
+
 
 protected :round_count
-        
+
 =begin rdoc
 Your main entry point. You must provide an input string of a valid length - if not, it'll +raise+.
 Valid lengths are 16, 24 or 32 bytes, and it will pick the block size based on the length of the input.
 
-The output is a Crypt::ByteStream object, which is to say more-or-less a String.
+The output is a JdCrypt::ByteStream object, which is to say more-or-less a String.
 =end
         def encrypt(plaintext)
 						self.block = plaintext
 
             rounds=round_count
             expanded_key=expand_key
-            
+
             blockl_b=@block_words*4
             #puts "m #{block.length}"
             tmp_block=Core.round0(block, expanded_key[0])
 						tmp_block = Core.roundn_times(tmp_block, expanded_key, rounds, :forward)
             return Core.roundl(tmp_block, expanded_key[rounds])
         end
-        
+
 =begin rdoc
 Your other main entry point. You must provide an input string of a valid length - if not, it'll +raise+.
 Valid lengths are 16, 24 or 32 bytes, and it will pick the block size based on the length of the input.
 Of course, if the string to decrypt is of invalid length then you've got other problems...
 
-The output is a Crypt::ByteStream object, which is to say more-or-less a String.
+The output is a JdCrypt::ByteStream object, which is to say more-or-less a String.
 =end
         def decrypt(ciphertext)
 						self.block = ciphertext
             rounds=round_count
             expanded_key=expand_key
-            
+
             blockl_b=@block_words*4
             tmp_block=Core.inv_roundl(block, expanded_key[rounds])
 						tmp_block = Core.roundn_times(tmp_block, expanded_key, rounds, :reverse)
@@ -146,7 +146,7 @@ The output is a Crypt::ByteStream object, which is to say more-or-less a String.
 This is exactly the same as Crypt::Rijndael except that the only allowed block size is 128-bit (16 bytes
 ), which affects possible IV (for CBC and other block-chaining algorithms) and plaintext block lengths.
 
-Given the effort that went into standardising on AES, you may well want to use this instead of 
+Given the effort that went into standardising on AES, you may well want to use this instead of
 Crypt::Rijndael for encryption if you're interoperating with another party. Of course, you *can* safely
 use Crypt::Rijndael for decryption in that circumstance.
 

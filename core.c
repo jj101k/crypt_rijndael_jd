@@ -39,7 +39,7 @@ uint32_t p_round_constant[MAX_ROUND_CONSTANTS_NEEDED];
 
 /*
  * xtime(somebyte)
- * 
+ *
  * Performs 2*somebyte in GF(2**8) modulo the polynomial 0x011b.
  *
  */
@@ -61,7 +61,7 @@ unsigned short poly_div(a, b) {
     unsigned short tv=b;
     unsigned short result=0;
     int i;
-    
+
     for(i=7;i>=0;i--) {
         tv=b<<i;
 
@@ -75,7 +75,7 @@ unsigned short poly_div(a, b) {
 
 /*
  * poly_mul(a, b)
- * 
+ *
  * a*b in GF(2**8). Note that this expands to a series of XOR operations.
  *
  * Not the same as dot() below in that it doesn't do the modulo 0x011b part,
@@ -86,9 +86,9 @@ unsigned short poly_mul(a, b) {
     unsigned short result=0;
     unsigned short tv=a;
     int i;
-    
+
     for(i=0; i<8; i++) {
-        if((b & (1<<i)) > 0) 
+        if((b & (1<<i)) > 0)
             result^=tv;
         tv=tv<<1;
     }
@@ -99,19 +99,19 @@ unsigned short poly_mul(a, b) {
  * mult_inverse(some number)
  *
  * For an full explanation of a multiplicative inverse, please see the Rijndael
- * spec. For these purposes, all you need to know is that this effectively 
- * solves a*POLYNOMIAL=b, where 'b' is supplied. This is not the same as 
+ * spec. For these purposes, all you need to know is that this effectively
+ * solves a*POLYNOMIAL=b, where 'b' is supplied. This is not the same as
  * poly_div(), for reasons I forget.
- */ 
+ */
 
 unsigned char mult_inverse(unsigned char num) {
     unsigned short quotient, multiplied;
     unsigned short remainder[11];
     unsigned short auxiliary[11];
     int i;
-    
+
     if(!num) return 0;
-    
+
     remainder[0]=POLYNOMIAL_VALUE;
     remainder[1]=num;
     auxiliary[0]=0;
@@ -140,14 +140,14 @@ unsigned char mult_inverse(unsigned char num) {
  * 'sbox' stands for 'Substitution box' here. This is the part of the cipher
  * that tries to ensure that the output doesn't have bytes in common with the
  * input.
- */ 
+ */
 unsigned char sbox(unsigned char b) {
     unsigned char c=0x63;
     b=mult_inverse(b);
     unsigned char result=b;
     unsigned char b_temp;
     int i;
-    
+
     for(i=1;i<5;i++) {
         b_temp=((b<<i)&0xff)|(b>>(8-i));
         result^=b_temp;
@@ -164,7 +164,7 @@ unsigned char inv_sbox_cache[256];
 
 void make_sbox_caches() {
     int i;
-    unsigned char j; 
+    unsigned char j;
     for(i=0;i<256;i++) {
         j=sbox(i);
         sbox_cache[i]=j;
@@ -245,13 +245,13 @@ VALUE cr_c_dot(VALUE self, VALUE a, VALUE b) {
 }
 
 /*
- * Another cache, because dot() is used frequently during cipher 
+ * Another cache, because dot() is used frequently during cipher
  * operations and is, again, expensive.
  *
  * dot_cache is an array of char arrays totalling 4KB plus 68-136 bytes in
  * pointers. Trust me, it's well worth it.
  *
- * Note that we only ever use six values on the left side: 
+ * Note that we only ever use six values on the left side:
  * 0x02, 0x03, 0x09, 0x0b, 0x0d, 0x0e
  *
  * We never need 0x01 because the answer is obvious. So, we could shave off much
@@ -344,16 +344,16 @@ static VALUE expand_key(VALUE self, VALUE block_len) {
 	uint32_t key_len_w = key_len_b/4;
 	unsigned char block_len_w = NUM2CHAR(block_len)/4;
 	int i;
-	
+
 	unsigned char round_constants_needed = block_len_w*
 		(rounds_by_block_size(bigger_number(block_len_w, key_len_w))+1)
 		/key_len_w;
-	
+
 	uint32_t *expanded_key_words=(uint32_t *)malloc(round_constants_needed*key_len_b);
-	
-	memcpy(expanded_key_words, 
+
+	memcpy(expanded_key_words,
 		RSTRING(rb_iv_get(self, "@key"))->ptr, key_len_b);
-	
+
 	if(key_len_w <= 6) {
 		// Short (128-bit and 192-bit) keys
 		for(i=key_len_w; i<round_constants_needed*key_len_w;i++) {
@@ -378,7 +378,7 @@ static VALUE expand_key(VALUE self, VALUE block_len) {
 			uint32_t n_temp=expanded_key_words[i+1];
 			if(i % key_len_w == 0) {
 				// Rotate, xor
-				unsigned char *p_temp = (unsigned char *) &n_temp;	
+				unsigned char *p_temp = (unsigned char *) &n_temp;
 				unsigned char t_byte=p_temp[0];
 				p_temp[0]=p_temp[1];
 				p_temp[1]=p_temp[2];
@@ -391,7 +391,7 @@ static VALUE expand_key(VALUE self, VALUE block_len) {
 				memcpy(&n_temp, p_temp, sizeof(n_temp));
 			}
 			expanded_key_words[i] = n_temp^expanded_key_words[i-key_len_w];
-		}	
+		}
 	}
 	VALUE expanded_key_s = rb_str_new((char *)expanded_key_words,
 		round_constants_needed*key_len_b);
@@ -433,7 +433,7 @@ void make_shiftrow_map() {
 			 */
 			if(displacements[j]>0) {
 				char displacement_point = row_len - displacements[j];
-				/* 
+				/*
 				 * We want the stuff after the displacement point first
 				 */
 				for(m=0, k=displacement_point; k<row_len; m++, k++)
@@ -492,7 +492,7 @@ char * shift_rows(char *state_b, size_t length_b) {
 	unsigned char length_w = length_b/4;
 	static char state_o[MAX_BLOCK_WORDS * 4];
 	int i;
-	for(i=0; i<length_b; i++) 
+	for(i=0; i<length_b; i++)
 		state_o[i] = state_b[shiftrow_map[length_w][i]];
 	return state_o;
 }
@@ -501,7 +501,7 @@ char *inverse_shift_rows(char *state_b, size_t length_b) {
 	unsigned char length_w = length_b/4;
 	static char state_o[MAX_BLOCK_WORDS * 4];
 	int i;
-	for(i=0; i<length_b; i++) 
+	for(i=0; i<length_b; i++)
 		state_o[i] = state_b[inv_shiftrow_map[length_w][i]];
 	return state_o;
 }
@@ -635,7 +635,7 @@ VALUE cr_c_expand_key_le6(VALUE self, VALUE key, VALUE block_words) {
                             p_temp[3]=t_byte
 
                         # tr would be great here again.
-                        p_temp=Crypt::ByteStream.new(Core.sbox_block(p_temp))
+                        p_temp=JdCrypt::ByteStream.new(Core.sbox_block(p_temp))
                         p_temp^=p_round_constant[(i/key_words).to_i]
                     end
                     ek_words[i]=p_temp^ek_words[i-key_words]
@@ -645,7 +645,7 @@ VALUE cr_c_expand_key_le6(VALUE self, VALUE key, VALUE block_words) {
                 expanded_key=Array(rounds+1)
                 (0 .. rounds).each do
                     |round|
-                    expanded_key[round]=Crypt::ByteStream.new(ek_words[round*block_words, block_words].to_s)
+                    expanded_key[round]=JdCrypt::ByteStream.new(ek_words[round*block_words, block_words].to_s)
                 end
                 return expanded_key;
             end
@@ -653,7 +653,7 @@ VALUE cr_c_expand_key_le6(VALUE self, VALUE key, VALUE block_words) {
 
 
 /*
- * This class provides essential functions for Rijndael encryption that are 
+ * This class provides essential functions for Rijndael encryption that are
  * expensive to do in Ruby and comfortably fit into C-style procedural code.
  */
 void Init_core() {
