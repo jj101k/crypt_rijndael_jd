@@ -56,7 +56,7 @@ unsigned char xtime(unsigned char inhex) {
  * because it's the reverse of the below operation.
  */
 
-unsigned short poly_div(a, b) {
+unsigned short poly_div(unsigned short a, unsigned short b) {
     unsigned short acc=a;
     unsigned short tv=b;
     unsigned short result=0;
@@ -82,7 +82,7 @@ unsigned short poly_div(a, b) {
  * nor does it guarantee to return < 256.
  */
 
-unsigned short poly_mul(a, b) {
+unsigned short poly_mul(unsigned short a, unsigned short b) {
     unsigned short result=0;
     unsigned short tv=a;
     int i;
