@@ -339,63 +339,100 @@ unsigned char *inverse_mix_columns(unsigned char *in_block, unsigned char block_
 /*
  * This is used to expand the key to blocklen*(rounds+1) bits
  */
-static VALUE expand_key(VALUE self, VALUE block_len) {
-	uint32_t key_len_b = RSTRING_LEN(rb_iv_get(self, "@key"));
-	uint32_t key_len_w = key_len_b/4;
-	unsigned int block_len_w = NUM2UINT(block_len)/4;
+static VALUE cr_c_expand_key_le6(VALUE self, VALUE key, VALUE block_len) {
+	Check_Type(key, T_STRING);
+	uint32_t key_len_b = RSTRING_LEN(key);
+	uint32_t key_words = key_len_b/4;
+	unsigned int block_len_w = NUM2UINT(block_len);
 	int i;
 
-	unsigned int round_constants_needed = block_len_w*
-		(rounds_by_block_size(bigger_number(block_len_w, key_len_w))+1)
-		/key_len_w;
+	unsigned int round_constants_needed = block_len_w*4*
+		(rounds_by_block_size(bigger_number(block_len_w, key_words))+1)
+		/key_words;
+
+	unsigned int rounds=rounds_by_block_size(bigger_number(block_len_w, key_words));
+
+	uint32_t *expanded_key_words=(uint32_t *)malloc(round_constants_needed*key_len_b);
+
+	memcpy(expanded_key_words, RSTRING_PTR(key), key_len_b);
+
+	// Short (128-bit and 192-bit) keys
+	for(i=key_words; i<block_len_w * (rounds + 1);i++) {
+		uint32_t n_temp=expanded_key_words[i-1];
+		if(i % key_words == 0) {
+			// Rotate, sbox, xor
+			unsigned char *p_temp = (unsigned char *) &n_temp;
+			unsigned char t_byte=p_temp[0];
+			p_temp[0]=p_temp[1];
+			p_temp[1]=p_temp[2];
+			p_temp[2]=p_temp[3];
+			p_temp[3]=t_byte;
+			p_temp = sbox_block(p_temp, 4);
+			memcpy(&n_temp, p_temp, sizeof(n_temp));
+			n_temp^=p_round_constant[i/key_words];
+		}
+		expanded_key_words[i] = n_temp^expanded_key_words[i-key_words];
+	}
+
+	VALUE expanded_key_a = rb_ary_new2(round_constants_needed);
+			rb_ary_store(expanded_key_a, 0, key);
+
+	for(i=0; i<=rounds;i++) {
+		rb_ary_store(expanded_key_a, i, rb_str_new((char *)(expanded_key_words + i * block_len_w), block_len_w * 4));
+	}
+
+	return expanded_key_a;
+}
+
+
+/*
+ * This is used to expand the key to blocklen*(rounds+1) bits
+ */
+static VALUE cr_c_expand_key_gt6(VALUE self, VALUE key, VALUE block_len) {
+	uint32_t key_len_b = RSTRING_LEN(key);
+	uint32_t key_words = key_len_b/4;
+	unsigned int block_len_w = NUM2UINT(block_len);
+	int i;
+
+	unsigned int round_constants_needed = block_len_w*4*
+		(rounds_by_block_size(bigger_number(block_len_w, key_words))+1)
+		/key_words;
+
+	unsigned int rounds=rounds_by_block_size(bigger_number(block_len_w, key_words));
 
 	uint32_t *expanded_key_words=(uint32_t *)malloc(round_constants_needed*key_len_b);
 
 	memcpy(expanded_key_words,
-		RSTRING_PTR(rb_iv_get(self, "@key")), key_len_b);
+		RSTRING_PTR(key), key_len_b);
 
-	if(key_len_w <= 6) {
-		// Short (128-bit and 192-bit) keys
-		for(i=key_len_w; i<round_constants_needed*key_len_w;i++) {
-			uint32_t n_temp=expanded_key_words[i+1];
-			if(i % key_len_w == 0) {
-				// Rotate, sbox, xor
-				unsigned char *p_temp = (unsigned char *) &n_temp;
-				unsigned char t_byte=p_temp[0];
-				p_temp[0]=p_temp[1];
-				p_temp[1]=p_temp[2];
-				p_temp[2]=p_temp[3];
-				p_temp[3]=t_byte;
-				p_temp = sbox_block(p_temp, 4);
-				memcpy(&n_temp, p_temp, sizeof(n_temp));
-				n_temp^=p_round_constant[i/key_len_w];
-			}
-			expanded_key_words[i] = n_temp^expanded_key_words[i-key_len_w];
+	// Long (256-bit) keys
+	for(i=key_words; i<block_len_w * (rounds + 1);i++) {
+		uint32_t n_temp=expanded_key_words[i-1];
+		if(i % key_words == 0) {
+			// Rotate, xor
+			unsigned char *p_temp = (unsigned char *) &n_temp;
+			unsigned char t_byte=p_temp[0];
+			p_temp[0]=p_temp[1];
+			p_temp[1]=p_temp[2];
+			p_temp[2]=p_temp[3];
+			p_temp[3]=t_byte;
+			n_temp^=p_round_constant[i/key_words];
+		} else if(i % key_words == 4) {
+			// sbox
+			unsigned char *p_temp = sbox_block((unsigned char *)&n_temp, 4);
+			memcpy(&n_temp, p_temp, sizeof(n_temp));
 		}
-	} else {
-		// Long (256-bit) keys
-		for(i=key_len_w; i<round_constants_needed*key_len_w;i++) {
-			uint32_t n_temp=expanded_key_words[i+1];
-			if(i % key_len_w == 0) {
-				// Rotate, xor
-				unsigned char *p_temp = (unsigned char *) &n_temp;
-				unsigned char t_byte=p_temp[0];
-				p_temp[0]=p_temp[1];
-				p_temp[1]=p_temp[2];
-				p_temp[2]=p_temp[3];
-				p_temp[3]=t_byte;
-				n_temp^=p_round_constant[i/key_len_w];
-			} else if(i % key_len_w == 4) {
-				// sbox
-				unsigned char *p_temp = sbox_block((unsigned char *)n_temp, 4);
-				memcpy(&n_temp, p_temp, sizeof(n_temp));
-			}
-			expanded_key_words[i] = n_temp^expanded_key_words[i-key_len_w];
-		}
+		expanded_key_words[i] = n_temp^expanded_key_words[i-key_words];
 	}
-	VALUE expanded_key_s = rb_str_new((char *)expanded_key_words,
-		round_constants_needed*key_len_b);
-	return expanded_key_s;
+
+	VALUE expanded_key_a = rb_ary_new2(round_constants_needed);
+			rb_ary_store(expanded_key_a, 0, key);
+
+	for(i=0; i<=rounds;i++) {
+		rb_ary_store(expanded_key_a, i, rb_str_new((char *)(expanded_key_words + i * block_len_w), block_len_w * 4));
+	}
+
+	return expanded_key_a;
 }
 
 struct sbl {
@@ -480,9 +517,12 @@ uint32_t *round0(uint32_t *input_words, uint32_t *round_key_words, unsigned char
 
 /* :nodoc: */
 VALUE cr_c_round0(VALUE self, VALUE input, VALUE round_key) {
+	Check_Type(input, T_STRING);
+	Check_Type(round_key, T_STRING);
 	unsigned char length_w = RSTRING_LEN(input)/4;
-	uint32_t *input_words = (uint32_t *)(RSTRING_PTR(input));
-	uint32_t *round_key_words = (uint32_t *)(RSTRING_PTR(round_key));
+	uint32_t *input_words = (uint32_t *)RSTRING_PTR(input);
+	uint32_t *round_key_words = (uint32_t *)RSTRING_PTR(round_key);
+
 	uint32_t *output_words = round0(input_words, round_key_words, length_w);
 	VALUE output_s = rb_str_new((char *)output_words, length_w*4);
 	return output_s;
@@ -522,25 +562,37 @@ char *inv_roundn(char *block_bytes, char *round_key_bytes, unsigned char length_
 	return block_bytes;
 }
 
-VALUE cr_c_roundn_times(VALUE self, VALUE input, VALUE round_keys, VALUE round_count, VALUE direction) {
+VALUE cr_c_roundn_times(VALUE self, VALUE input, VALUE expanded_key, VALUE round_count, VALUE direction) {
 	unsigned char length_b = RSTRING_LEN(input);
 	char *input_bytes = (char *)(RSTRING_PTR(input));
 	char round_count_n = NUM2CHR(round_count);
 	int i;
-	char *direction_name = rb_id2name(SYM2ID(direction));
+	const char *direction_name = rb_id2name(SYM2ID(direction));
+			char ix[1000000];
+
+	Check_Type(expanded_key, T_ARRAY);
+					strncpy(ix, input_bytes, length_b);
 	if(!strcmp(direction_name, "reverse")) {
+
 		for(i=round_count_n-1; i>0; i--) {
-			VALUE f = INT2FIX(i);
-			input_bytes = inv_roundn(input_bytes, rb_ary_aref(1, &f, round_keys), length_b);
+			VALUE entry = rb_ary_entry(expanded_key, i);
+			Check_Type(entry, T_STRING);
+			char *r = RSTRING_PTR(entry);
+			input_bytes = inv_roundn(input_bytes, r, length_b);
+			strncpy(ix, input_bytes, length_b);
 		}
 	} else if(!strcmp(direction_name, "forward")) {
 		for(i=1; i<round_count_n; i++) {
-			VALUE f = INT2FIX(i);
-			input_bytes = roundn(input_bytes, rb_ary_aref(1, &f, round_keys), length_b);
+			VALUE entry = rb_ary_entry(expanded_key, i);
+			Check_Type(entry, T_STRING);
+			char *r = RSTRING_PTR(entry);
+			input_bytes = roundn(input_bytes, r, length_b);
+						strncpy(ix, input_bytes, length_b);
 		}
 	} else {
 		return input; /* FIXME I would rather raise an exception */
 	}
+
 	input = rb_str_new(input_bytes, length_b);
 	return input;
 }
@@ -569,6 +621,8 @@ VALUE cr_c_inv_roundn(VALUE self, VALUE input, VALUE round_key) {
 
 /* :nodoc: */
 VALUE cr_c_roundl(VALUE self, VALUE input, VALUE round_key) {
+	Check_Type(input, T_STRING);
+	Check_Type(round_key, T_STRING);
 	unsigned char length_b = RSTRING_LEN(input);
 	char *input_bytes = (char *)(RSTRING_PTR(input));
 	char *round_key_bytes = (char *)(RSTRING_PTR(round_key));
@@ -604,56 +658,13 @@ VALUE cr_c_round_count(VALUE self, VALUE block_words, VALUE key_words) {
 		round_count = 12;
 		break;
 	case 4:
-		round_count = 8;
+		round_count = 10;
 		break;
 	default:
-		round_count = 8; // FIXME I'd rather raise, of course
+		round_count = 10; // FIXME I'd rather raise, of course
 	};
 	return INT2NUM(round_count);
 }
-
-/*
- * For short (128-bit, 192-bit) keys this is used to expand the key to blocklen*(rounds+1) bits
- */
-VALUE cr_c_expand_key_le6(VALUE self, VALUE key, VALUE block_words) {
-	int block_words_i = NUM2INT(block_words);
-	uint32_t *ek_words = RSTRING_PTR(key);
-	char key_word_count = RSTRING_LEN(key) / 4;
-
-            def self.expand_key_le6(key, block_words) #:nodoc
-                p_round_constant = round_constants(block_words, key_words)
-
-                rounds=round_count(block_words, key_words)
-
-                (key_words .. block_words * (rounds + 1)-1).each do
-                    |i|
-
-                    p_temp=ek_words[i-1]
-
-
-                    if(i % key_words == 0)
-
-                            t_byte=p_temp[0]
-                            p_temp[0 .. 2]=p_temp[1 .. 3]
-                            p_temp[3]=t_byte
-
-                        # tr would be great here again.
-                        p_temp=JdCrypt::ByteStream.new(Core.sbox_block(p_temp))
-                        p_temp^=p_round_constant[(i/key_words).to_i]
-                    end
-                    ek_words[i]=p_temp^ek_words[i-key_words]
-                    i+=1
-                end
-                #puts ek_words.to_s
-                expanded_key=Array(rounds+1)
-                (0 .. rounds).each do
-                    |round|
-                    expanded_key[round]=JdCrypt::ByteStream.new(ek_words[round*block_words, block_words].to_s)
-                end
-                return expanded_key;
-            end
-
-
 
 /*
  * This class provides essential functions for Rijndael encryption that are
@@ -674,6 +685,8 @@ void Init_core() {
     rb_define_module_function(cCRC, "inv_roundl", cr_c_inv_roundl, 2);
 		rb_define_module_function(cCRC, "roundn_times", cr_c_roundn_times, 4);
 		rb_define_module_function(cCRC, "round_count", cr_c_round_count, 2);
+		rb_define_module_function(cCRC, "expand_key_le6", cr_c_expand_key_le6, 2);
+		rb_define_module_function(cCRC, "expand_key_gt6", cr_c_expand_key_gt6, 2);
     make_dot_cache();
     make_sbox_caches();
     make_round_constants();
