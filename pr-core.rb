@@ -22,8 +22,11 @@ class Crypt
                   temp_v=1
                   p_round_constant=[0,1].map {|i| [i, 0, 0, 0].pack("C*")}
 
+                  roundCountNeeded = round_count(block_words, key_words)
+                  roundConstantsNeeded = (block_words * (roundCountNeeded + 1)/key_words).to_i
+
                   p_round_constant+=
-                  (2 .. (block_words * (round_count(block_words, key_words) + 1)/key_words).to_i).to_a.map {
+                  (2 .. roundConstantsNeeded).to_a.map {
                       #0x1000000<<($_-1)
                       [(temp_v=Core.dot(02,temp_v)),0,0,0].pack("C*")
                   }
