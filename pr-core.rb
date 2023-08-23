@@ -52,7 +52,7 @@ class Crypt
 
 
                     if(i % key_words == 0)
-
+                            p_temp = JdCrypt::ByteStream.new(p_temp)
                             t_byte=p_temp.byte_at(0)
                             p_temp[0 .. 2]=p_temp[1 .. 3]
                             p_temp.byte_at(3, t_byte)
@@ -89,7 +89,7 @@ class Crypt
 
                     p_temp=ek_words[i-1]
                     if(i % key_words == 0)
-
+                            p_temp = JdCrypt::ByteStream.new(p_temp)
                             t_byte=p_temp.byte_at(0)
                             p_temp[0 .. 2]=p_temp[1 .. 3]
                             p_temp.byte_at(3, t_byte)
