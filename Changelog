@@ -1,3 +1,14 @@
+v1.0.0
+Jim Driscoll (8):
+      Use JdCrypt (bytestream, CBC)
+      Fix the config source
+      Update for modern Ruby compat
+      Trivial simplification
+      Fix the PR core accidentally overwriting its data
+      Add an earlier test
+      Add some missing types
+      Get the C core minimally working again
+
 v0.9.4
 Jim A. Driscoll (6):
       For efficiency, don't call #block= again in #encrypt or #decrypt
