@@ -50,6 +50,13 @@ test_string="test\n123456789ab" # exactly 16 bytes
 cipher=Crypt::Rijndael.new(real_key)
 
 ctext=cipher.encrypt(test_string)
+
+if ctext != ["cf213bc0386c43c0ccc8f108bb508354"].pack("H*")
+	p ctext
+	puts "Couldn't even encrypt correctly!\n"
+	raise
+end
+
 if(cipher.decrypt(ctext) == test_string)
 	puts "Apparently I can.\n"
 else
