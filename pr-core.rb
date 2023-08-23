@@ -1,4 +1,4 @@
-class Crypt
+class JdCrypt
     class Rijndael
         class Core
             @@rounds_by_block_size={

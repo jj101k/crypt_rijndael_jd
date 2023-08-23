@@ -3,13 +3,13 @@ unless(defined? JdCrypt::ByteStream)
   JdCrypt::ByteStream.strict_mode = true
 end
 # This is to help testing
-unless(defined? Crypt::Rijndael::Core)
-	require "crypt/rijndael/core"
+unless(defined? JdCrypt::Rijndael::Core)
+	require "jdcrypt/rijndael/core"
 end
 
-class Crypt
+class JdCrypt
 =begin rdoc
-Crypt::Rijndael allows you to encrypt single blocks of data using the encrypt() and decrypt() methods
+JdCrypt::Rijndael allows you to encrypt single blocks of data using the encrypt() and decrypt() methods
 below.
 
 You probably want to use some kind of CBC module with this.
@@ -143,12 +143,12 @@ The output is a JdCrypt::ByteStream object, which is to say more-or-less a Strin
     end
 
 =begin rdoc
-This is exactly the same as Crypt::Rijndael except that the only allowed block size is 128-bit (16 bytes
+This is exactly the same as JdCrypt::Rijndael except that the only allowed block size is 128-bit (16 bytes
 ), which affects possible IV (for CBC and other block-chaining algorithms) and plaintext block lengths.
 
 Given the effort that went into standardising on AES, you may well want to use this instead of
-Crypt::Rijndael for encryption if you're interoperating with another party. Of course, you *can* safely
-use Crypt::Rijndael for decryption in that circumstance.
+JdCrypt::Rijndael for encryption if you're interoperating with another party. Of course, you *can* safely
+use JdCrypt::Rijndael for decryption in that circumstance.
 
 The spec for this is in an US government standards document named FIPS-197. Google for it.
 =end

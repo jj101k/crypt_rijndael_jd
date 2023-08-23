@@ -4,9 +4,9 @@ This package requires Ruby 1.8 or above.
 
 Usage is pretty simple:
 
-require 'crypt/rijndael'
+require 'jdcrypt/rijndael'
 key="xxxxxxxxxxxxxxxx"
-cipher=Crypt::Rijndael.new(key)
+cipher=JdCrypt::Rijndael.new(key)
 plaintext="hello world....."
 ciphertext=cipher.encrypt(plaintext)
 plaintext=cipher.decrypt(ciphertext)
@@ -21,7 +21,7 @@ Some things to note, though:
   sure to generate suitably random keys from a reliable random
   source.  Encrypting to a predictable key is not sensible.
 
-- Crypt::AES is a subclass of Crypt::Rijndael, the only difference
+- JdCrypt::AES is a subclass of JdCrypt::Rijndael, the only difference
   being that it only supports one block size(128 bit)
 
 - There is a simple PKCS#5-padded CBC implementation here. If you're

@@ -7,14 +7,14 @@ rescue LoadError
 end
 
 TestString1="0123456789\x9abc\xcde\xff"
-#p((0..255).collect {|i| Crypt::Rijndael::Core.sbox(i)}.pack("C*"))
+#p((0..255).collect {|i| JdCrypt::Rijndael::Core.sbox(i)}.pack("C*"))
 #p "0123456789\x9abc\xcde\xff"
-#p Crypt::Rijndael::Core.sbox_block(TestString1)
-#p Crypt::Rijndael::Core.mix_column(TestString1)
-#p((0..255).collect {|i| Crypt::Rijndael::Core.dot(i, 255-i)}.pack("C*"))
+#p JdCrypt::Rijndael::Core.sbox_block(TestString1)
+#p JdCrypt::Rijndael::Core.mix_column(TestString1)
+#p((0..255).collect {|i| JdCrypt::Rijndael::Core.dot(i, 255-i)}.pack("C*"))
 
 puts "Testing simplest possible encryption"
-cipher=Crypt::Rijndael.new("1"*16)
+cipher=JdCrypt::Rijndael.new("1"*16)
 raise unless cipher.encrypt("2"*16)
 puts "Ok"
 
@@ -47,7 +47,7 @@ real_key=[
 puts "Testing enc/dec... in other words, can I decrypt what I encrypt?\n"
 test_string="test\n123456789ab" # exactly 16 bytes
 
-cipher=Crypt::Rijndael.new(real_key)
+cipher=JdCrypt::Rijndael.new(real_key)
 
 ctext=cipher.encrypt(test_string)
 
@@ -108,7 +108,7 @@ ctexts={16=>{}, 24=>{}, 32=>{}}
 
 [16, 24, 32].each do
 	|keylen|
-	cipher=Crypt::Rijndael.new(keys[keylen])
+	cipher=JdCrypt::Rijndael.new(keys[keylen])
 	[16, 24, 32].each do
 		|blocklen|
 		puts "Block length #{blocklen*8}, key length #{keylen*8}\n"
@@ -125,9 +125,9 @@ ctexts={16=>{}, 24=>{}, 32=>{}}
 	end
 end
 	puts "Testing AES mode"
-	cipher_rd=Crypt::Rijndael.new(keys[16])
+	cipher_rd=JdCrypt::Rijndael.new(keys[16])
 	cipher_rd.blocksize=32
-	cipher_aes=Crypt::AES.new(keys[16])
+	cipher_aes=JdCrypt::AES.new(keys[16])
 	cipher_aes.blocksize=16
 	begin
 		cipher_aes.blocksize=32
@@ -138,7 +138,7 @@ end
 	end
 
 	sample_long="This is some text that, well, basically exists only for the purpose of being long, thus forcing the usage of a block mode.\n"
-	cipher=Crypt::Rijndael.new(keys[16])
+	cipher=JdCrypt::Rijndael.new(keys[16])
 	ctext_cbc=nil
 	if(!defined? JdCrypt::CBC)
 		puts "No JdCrypt::CBC, skipping CBC tests"
@@ -152,7 +152,7 @@ end
 	# Bug workaround for Linux
 	huge_ptext=File.open("bwulf10.txt", "r").read
 
-	cipher=Crypt::Rijndael.new(keys[16])
+	cipher=JdCrypt::Rijndael.new(keys[16])
 
 	before=Time.new
 	huge_ctext=nil
@@ -167,8 +167,8 @@ end
 	size=huge_ptext.length/1024
 	puts sprintf("#{diff} seconds to encrypt a %.1fKiB file (%.1fKiB/s).\n", size, size/diff)
 
-  puts "Switching to Crypt::AES for decrypt"
-	cipher=Crypt::AES.new(keys[16])
+  puts "Switching to JdCrypt::AES for decrypt"
+	cipher=JdCrypt::AES.new(keys[16])
 	before=Time.new
 	new_huge_ptext=nil
 	if(!defined? JdCrypt::CBC)

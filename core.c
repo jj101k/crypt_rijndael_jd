@@ -671,7 +671,7 @@ VALUE cr_c_round_count(VALUE self, VALUE block_words, VALUE key_words) {
  * expensive to do in Ruby and comfortably fit into C-style procedural code.
  */
 void Init_core() {
-    VALUE cCrypt=rb_define_class("Crypt", rb_cObject);
+    VALUE cCrypt=rb_define_class("JdCrypt", rb_cObject);
     VALUE cCR=rb_define_class_under(cCrypt, "Rijndael", rb_cObject);
     VALUE cCRC=rb_define_class_under(cCR, "Core", rb_cObject);
 		/* Used functions are: sbox_block dot *round* */
