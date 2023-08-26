@@ -28,7 +28,7 @@ class JdCrypt
                   p_round_constant+=
                   (2 .. roundConstantsNeeded).to_a.map {
                       #0x1000000<<($_-1)
-                      [(temp_v=Core.dot(02,temp_v)),0,0,0].pack("C*")
+                      [(temp_v=dot(02,temp_v)),0,0,0].pack("C*")
                   }
                   @@round_constants[block_words][key_words] = p_round_constant
                 end
@@ -58,7 +58,7 @@ class JdCrypt
                             p_temp.byte_at(3, t_byte)
 
                         # tr would be great here again.
-                        p_temp=JdCrypt::ByteStream.new(Core.sbox_block(p_temp))
+                        p_temp=JdCrypt::ByteStream.new(sbox_block(p_temp))
                         p_temp^=p_round_constant[(i/key_words).to_i]
                     end
                     ek_words[i]=p_temp^ek_words[i-key_words]
@@ -95,11 +95,11 @@ class JdCrypt
                             p_temp.byte_at(3, t_byte)
 
                         # tr would be great here again.
-                        p_temp=JdCrypt::ByteStream.new(Core.sbox_block(p_temp))
+                        p_temp=JdCrypt::ByteStream.new(sbox_block(p_temp))
                         p_temp^=p_round_constant[(i/key_words).to_i]
 
                     elsif(i % key_words == 4)
-                        p_temp=Core.sbox_block(p_temp)
+                        p_temp=sbox_block(p_temp)
                     end
                     ek_words[i]=ek_words[i-key_words]^p_temp
                 end
@@ -116,12 +116,12 @@ class JdCrypt
               when :forward then
                 (1 .. rounds-1).each do
                   |current_round|
-                  block=Core.roundn(block, expanded_key[current_round])
+                  block=roundn(block, expanded_key[current_round])
                 end
               when :reverse then
                 (1 .. rounds-1).to_a.reverse.each do
                     |current_round|
-                    block=Core.inv_roundn(block, expanded_key[current_round])
+                    block=inv_roundn(block, expanded_key[current_round])
                 end
               else
                 raise "Unsupported round direction"
@@ -427,7 +427,7 @@ class JdCrypt
                 @@all_cached=1
             end
 
+            private_class_method :dot, :sbox_block, :inv_sbox_block, :roundn, :inv_roundn
         end
-
     end
 end
