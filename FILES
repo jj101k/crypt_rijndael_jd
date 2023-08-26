@@ -18,7 +18,7 @@ install.rb:
 	Maker script. See INSTALL
 install.rb:
 	Master installer script. See INSTALL
-rijndael.rb:
+jdcrypt/rijndael.rb:
 	The main class definitions
 test.rb:
 	A test script, suitable for running before install.

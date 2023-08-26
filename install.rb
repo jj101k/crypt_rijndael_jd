@@ -4,7 +4,7 @@ require "fileutils"
 include FileUtils::Verbose
 
 mkdir_p(CONFIG["sitelibdir"]+"/jdcrypt")
-install("rijndael.rb", CONFIG["sitelibdir"]+"/jdcrypt", :mode=>0644)
+install("jdcrypt/rijndael.rb", CONFIG["sitelibdir"]+"/jdcrypt", :mode=>0644)
 if(File.exists? "Makefile")
 	system((ENV["MAKE"]||"make")+' install')
 else
