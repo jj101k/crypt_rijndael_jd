@@ -7,11 +7,6 @@ rescue LoadError
 end
 
 TestString1="0123456789\x9abc\xcde\xff"
-#p((0..255).collect {|i| JdCrypt::Rijndael::Core.sbox(i)}.pack("C*"))
-#p "0123456789\x9abc\xcde\xff"
-#p JdCrypt::Rijndael::Core.sbox_block(TestString1)
-#p JdCrypt::Rijndael::Core.mix_column(TestString1)
-#p((0..255).collect {|i| JdCrypt::Rijndael::Core.dot(i, 255-i)}.pack("C*"))
 
 puts "Testing simplest possible encryption"
 cipher=JdCrypt::Rijndael.new("1"*16)
@@ -50,6 +45,12 @@ test_string="test\n123456789ab" # exactly 16 bytes
 cipher=JdCrypt::Rijndael.new(real_key)
 
 ctext=cipher.encrypt(test_string)
+
+# % (echo test; echo -n 123456789ab) | openssl enc -aes-128-cbc -K 2b7e151628aed2a6abf7158809cf4f3c -iv 0000000000000000 | od -t x1
+# 0000000    cf  21  3b  c0  38  6c  43  c0  cc  c8  f1  08  bb  50  83  54
+# 0000020    a7  86  74  a6  6c  7f  09  2e  b2  8c  0c  97  75  fa  17  3d
+# 0000040
+# %
 
 if ctext != ["cf213bc0386c43c0ccc8f108bb508354"].pack("H*")
 	p ctext
