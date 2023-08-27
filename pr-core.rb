@@ -1,5 +1,9 @@
 class JdCrypt
   class Rijndael
+=begin rdoc
+This class is used by JdCrypt::Rijndael to handle most of the encryption work,
+if you don't have the binary core installed.
+=end
     class Core
       COLUMN_SIZE = 4
 

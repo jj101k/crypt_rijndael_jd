@@ -1,15 +1,15 @@
 USAGE
 
-This package requires Ruby 1.8 or above.
+This package requires Ruby 2.6 or above.
 
 Usage is pretty simple:
 
 require 'jdcrypt/rijndael'
-key="xxxxxxxxxxxxxxxx"
-cipher=JdCrypt::Rijndael.new(key)
-plaintext="hello world....."
-ciphertext=cipher.encrypt(plaintext)
-plaintext=cipher.decrypt(ciphertext)
+key = "xxxxxxxxxxxxxxxx"
+cipher = JdCrypt::Rijndael.new(key)
+plaintext = "hello world....."
+ciphertext = cipher.encrypt(plaintext)
+plaintext = cipher.decrypt(ciphertext)
 
 Some things to note, though:
 
@@ -47,13 +47,13 @@ script uses.
 
 COMPATIBILITY AND PERFORMANCE
 
-Ruby 1.9: Ruby core works, gets 25-30KiB/s on encryption and
-decryption on my test machine.
-
-Rubinius 1.2.3: Ruby core works, ~15KiB/s
+Ruby 2.6: works on universal.arm64e-darwin22 (note: the binary should also work
+on other architectures). On the test machine, it can encrypt/decrypt at around
+6-8MiB/s. When using the pure-ruby core (using the _binary_ JdCrypt::ByteStream) it
+gets around 200KiB/s.
 
 COPYRIGHT
 
 This files in this distribution (with the exception of bwulf10.txt)
-are copyright 2005-2011 Jim Driscoll <jim.a.driscoll@gmail.com>; please see
+are copyright 2005-2023 Jim Driscoll <jim.a.driscoll@gmail.com>; please see
 the included file COPYING for details.
