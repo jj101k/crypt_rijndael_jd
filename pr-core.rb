@@ -20,7 +20,7 @@ if you don't have the binary core installed.
         acc = a
         tv = b
         result = 0
-        (0..7).to_a.reverse.each do
+        7.downto(0) do
           |i|
           tv = b << i
 
@@ -37,7 +37,7 @@ if you don't have the binary core installed.
 
         result = 0
         tv = a
-        (0..7).each do
+        0.upto(7) do
           |i|
           if (b & (1 << i) > 0)
             result ^= tv
@@ -58,7 +58,7 @@ if you don't have the binary core installed.
 
         rounds = round_count(block_words, key_words)
 
-        (key_words..block_words * (rounds + 1) - 1).each do
+        key_words.upto(block_words * (rounds + 1) - 1) do
           |i|
           p_temp = ek_words[i - 1]
           if (i % key_words == 0)
@@ -76,7 +76,7 @@ if you don't have the binary core installed.
           ek_words[i] = ek_words[i - key_words] ^ p_temp
         end
         expanded_key = Array(rounds + 1)
-        (0..rounds).each do
+        0.upto(rounds) do
           |round|
           expanded_key[round] = JdCrypt::ByteStream.new(ek_words[round * block_words, block_words].join(""))
         end
@@ -94,7 +94,7 @@ if you don't have the binary core installed.
 
         rounds = round_count(block_words, key_words)
 
-        (key_words..block_words * (rounds + 1) - 1).each do
+        key_words.upto(block_words * (rounds + 1) - 1) do
           |i|
           p_temp = ek_words[i - 1]
 
@@ -113,7 +113,7 @@ if you don't have the binary core installed.
         end
         #puts ek_words.to_s
         expanded_key = Array(rounds + 1)
-        (0..rounds).each do
+        0.upto(rounds) do
           |round|
           expanded_key[round] = JdCrypt::ByteStream.new(ek_words[round * block_words, block_words].join(""))
         end
@@ -124,7 +124,7 @@ if you don't have the binary core installed.
       def self.inv_mix_column(col)
         block_words = col.length / COLUMN_SIZE
         r_col = Array.new
-        (0..(block_words - 1)).each { |current_block|
+        0.upto(block_words - 1) { |current_block|
           r_col += [
             (@@dot_cache[0x0e][col.byte_at((current_block * 4) + 0)] ^
              @@dot_cache[0x0b][col.byte_at((current_block * 4) + 1)] ^
@@ -202,28 +202,30 @@ if you don't have the binary core installed.
           state_b = (0..(row_len * 4) - 1).to_a
           col_len = 4
           c = shift_for_block_len[block_len]
-          (0..c.length - 1).each do
+          0.upto(c.length - 1) do
             |row_n|
             # Grab the lossage first
             next unless c[row_n] > 0
             d1 = Array.new
             d2 = Array.new
-            (row_len - c[row_n]..row_len - 1).map { |col| row_n + col_len * col }.each do
-              |offset|
+            (row_len - c[row_n]).upto(row_len - 1) do
+              |col|
+              offset = row_n + col_len * col
               d1 += state_b[offset, 1]
             end
-            (0..row_len - c[row_n] - 1).map { |col| row_n + col_len * col }.each do
-              |offset|
+            0.upto(row_len - c[row_n] - 1) do
+              |col|
+              offset = row_n + col_len * col
               d2 += state_b[offset, 1]
             end
 
-            (0..row_len - 1).map { |col| row_n + col_len * col }.each do
-              |offset|
+            0.upto(row_len - 1) do |col|
+              offset = row_n + col_len * col
               state_b[offset] = d1.shift || d2.shift
             end
           end
           @@inv_shiftrow_map[block_len] = state_b
-          (0..state_b.length - 1).each do
+          0.upto(state_b.length - 1) do
             |offset|
             @@shiftrow_map[block_len][state_b[offset]] = offset
           end
@@ -233,7 +235,7 @@ if you don't have the binary core installed.
       def self.mix_column(col)
         block_words = col.length / COLUMN_SIZE
         r_col = Array.new
-        (0..(block_words - 1)).each {
+        0.upto(block_words - 1) {
           |current_word|
           r_col += [
             (@@dot_cache[02][col.byte_at((current_word * 4) + 0)] ^
@@ -262,7 +264,7 @@ if you don't have the binary core installed.
       def self.mul(a, b)
         result = 0
         tv = a
-        (0..7).each do
+        0.upto(7) do
           |i|
           if (b & (1 << i) > 0)
             result ^= tv
@@ -351,12 +353,12 @@ if you don't have the binary core installed.
       def self.roundn_times(block, expanded_key, rounds, direction) #:nodoc:
         case (direction)
         when :forward
-          (1..rounds - 1).each do
+          1.upto(rounds - 1) do
             |current_round|
             block = roundn(block, expanded_key[current_round])
           end
         when :reverse
-          (1..rounds - 1).to_a.reverse.each do
+          (rounds - 1).downto(1) do
             |current_round|
             block = inv_roundn(block, expanded_key[current_round])
           end
@@ -370,7 +372,7 @@ if you don't have the binary core installed.
         c = 0x63
         b = mult_inverse(b)
         result = b
-        (1..4).each do
+        1.upto(4) do
           |i|
           b_t = ((b << i) & 0xff) | (b >> (8 - i))
           result ^= b_t
@@ -411,7 +413,7 @@ if you don't have the binary core installed.
       unless (defined? @@all_cached)
         @@sbox = (0..255).to_a.map { |input| sbox(input) }
         @@inv_sbox = Array.new(256)
-        (0..255).each do
+        0.upto(255) do
           |input|
           @@inv_sbox[@@sbox[input]] = input
         end
@@ -419,7 +421,7 @@ if you don't have the binary core installed.
         [0x2, 0x3, 0x9, 0xb, 0xd, 0xe].each do
         # These are the only numbers we need.
           |a|
-          (0..0xff).each do
+          0.upto(0xff) do
             |b|
             @@dot_cache[a][b] = dot(a, b)
           end
