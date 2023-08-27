@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby -rprofile
-require ARGV[0]||"./core"
-require "./jdcrypt/rijndael"
+require ARGV[0]| | (__dir__ + "/core")
+require __dir__ + "/jdcrypt/rijndael"
 require "jdcrypt/cbc"
 
 puts "Encrypting a fairly big block of text...\n";

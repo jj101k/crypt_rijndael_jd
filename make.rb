@@ -12,7 +12,7 @@ loop do
 			File.unlink("core.rb")
 			rescue Errno::ENOENT
 			end
-			require "./extconf.rb"
+			require __dir__ + "/extconf.rb"
 			exit system(ENV["MAKE"]||"make")
 	elsif(answer=~/^r/i)
 			begin

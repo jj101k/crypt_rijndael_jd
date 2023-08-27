@@ -1,7 +1,7 @@
 #!/usr/bin/ruby -w
-require ARGV[0]||"./core"
-require "./jdcrypt/rijndael"
-require "./jdcrypt/aes"
+require ARGV[0] || (__dir__ + "/core")
+require __dir__ + "/jdcrypt/rijndael"
+require __dir__ + "/jdcrypt/aes"
 begin
 require "jdcrypt/cbc"
 rescue LoadError
