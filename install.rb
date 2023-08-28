@@ -9,6 +9,7 @@ top_dir = "#{CONFIG["sitelibdir"]}/jdcrypt"
 
 mkdir_p(top_dir)
 install("jdcrypt/rijndael.rb", top_dir, mode: 0o644)
+install("jdcrypt/aes.rb", top_dir, mode: 0o644)
 if File.exist? "Makefile"
   system("#{ENV["MAKE"] || "make"} install")
 else
