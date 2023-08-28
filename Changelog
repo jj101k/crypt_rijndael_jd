@@ -1,3 +1,18 @@
+v1.1.1
+Jim Driscoll (12):
+      Synchronise copyright range
+      Autoformatted code
+      Simple cleanups
+      Improve the test comments
+      Test: fix bad namespace
+      Properly isolate the main deployed file
+      Organise Ruby code more; split out AES class
+      Doc updates
+      Embrace upto/downto to simplify a little
+      Use more appropriate include paths
+      Style update
+      Add the missing AES class
+
 v1.1.0
 Jim Driscoll (1):
       Change to JdCrypt
