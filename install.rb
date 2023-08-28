@@ -1,13 +1,18 @@
-require "rbconfig.rb"
+# frozen_string_literal: true
+
+require "rbconfig"
 include RbConfig
 require "fileutils"
 include FileUtils::Verbose
 
-mkdir_p(CONFIG["sitelibdir"]+"/jdcrypt")
-install("jdcrypt/rijndael.rb", CONFIG["sitelibdir"]+"/jdcrypt", :mode=>0644)
-if(File.exists? "Makefile")
-	system((ENV["MAKE"]||"make")+' install')
+top_dir = "#{CONFIG["sitelibdir"]}/jdcrypt"
+
+mkdir_p(top_dir)
+install("jdcrypt/rijndael.rb", top_dir, mode: 0o644)
+if File.exist? "Makefile"
+  system("#{ENV["MAKE"] || "make"} install")
 else
-	mkdir_p(CONFIG["sitelibdir"]+"/jdcrypt/rijndael")
-	install("core.rb", CONFIG["sitelibdir"]+"/jdcrypt/rijndael/", :mode=>0644)
+  bottom_dir = "#{top_dir}/rijndael"
+  mkdir_p(bottom_dir)
+  install("core.rb", bottom_dir, mode: 0o644)
 end
