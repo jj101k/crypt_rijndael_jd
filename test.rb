@@ -114,6 +114,23 @@ ctexts = { 16 => {}, 24 => {}, 32 => {} }
   end
 end
 puts "Testing AES mode"
+
+[16, 24, 32].each do |keylen|
+  cipher = JdCrypt::AES.new(keys[keylen])
+  blocklen = 16
+  puts "Block length #{blocklen * 8}, key length #{keylen * 8}\n"
+  unless (cipher.blocksize = blocklen)
+    puts "Uh-oh! I can't set a block size. Am I in AES mode?\n"
+    next
+  end
+  ctexts[keylen][blocklen] = cipher.encrypt(pts[blocklen])
+  if cipher.decrypt(ctexts[keylen][blocklen]) == pts[blocklen]
+    puts "Works.\n"
+  else
+    puts "Failed.\n"
+  end
+end
+
 cipher_rd = JdCrypt::Rijndael.new(keys[16])
 cipher_rd.blocksize = 32
 cipher_aes = JdCrypt::AES.new(keys[16])
@@ -124,6 +141,12 @@ begin
   exit 0
 rescue RuntimeError
   puts "Success"
+end
+
+c = JdCrypt::AES.new(["DBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDB"].pack("H*"))
+
+unless c.encrypt(["00000000000000000000000000000000"].pack("H*")).unpack1("H*") == "8d0fb61ad510df6d8f401b8ac01f19b6"
+  raise "Failed to encrypt properly at 192k/128b"
 end
 
 sample_long =
