@@ -117,7 +117,7 @@ VALUE cr_c_round_count(VALUE self, VALUE block_words, VALUE key_words)
 		round_count = 10;
 		break;
 	default:
-		round_count = 10; // FIXME I'd rather raise, of course
+		rb_raise(rb_eRuntimeError, "Bad word count %d (%d vs %d)", biggest_words_i, block_words_i, key_words_i);
 	};
 	return INT2NUM(round_count);
 }
