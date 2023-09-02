@@ -103,7 +103,7 @@ VALUE cr_c_round_count(VALUE self, VALUE block_words, VALUE key_words)
 
 	int block_words_i = NUM2INT(block_words);
 	int key_words_i = NUM2INT(key_words);
-	int biggest_words_i = (block_words_i > key_words_i) ? block_words : key_words;
+	int biggest_words_i = (block_words_i > key_words_i) ? block_words_i : key_words_i;
 	int round_count;
 	switch (biggest_words_i)
 	{
