@@ -332,8 +332,7 @@ struct expandKeyInit expand_key_start(uint32_t key_len_b, unsigned int block_len
 	struct expandKeyInit init;
 	init.key_words = key_len_b / WORD_LEN;
 	init.rounds = rounds_by_block_size(bigger_number(block_len_w, init.key_words));
-	init.round_constants_needed = block_len_w * 4 *
-										  (rounds_by_block_size(bigger_number(block_len_w, init.key_words)) + 1) / init.key_words;
+	init.round_constants_needed = block_len_w * 4 * (init.rounds + 1) / init.key_words;
 	init.expanded_key_words = (uint32_t *)malloc(init.round_constants_needed * key_len_b);
 	memcpy(init.expanded_key_words, key, key_len_b);
 
