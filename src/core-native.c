@@ -387,6 +387,9 @@ struct expandKeyInit expand_key_gt6(uint32_t key_len_b, char *key, unsigned int 
 			p_temp[1] = p_temp[2];
 			p_temp[2] = p_temp[3];
 			p_temp[3] = t_byte;
+
+			p_temp = sbox_block(p_temp, 4);
+			memcpy(&n_temp, p_temp, sizeof(n_temp));
 			n_temp ^= p_round_constant[i / init.key_words];
 		}
 		else if (i % init.key_words == 4)
