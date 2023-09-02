@@ -1,3 +1,10 @@
+2.1
+Jim Driscoll (4):
+      Improve the verbosity of the bug test
+      Quality: quick simplification
+      Fix 256-bit keys: add missing sbox
+      Test 256-bit key bug
+
 2.0
 Jim Driscoll (4):
       Add an uninstaller if needed
