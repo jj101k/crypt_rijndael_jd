@@ -1,3 +1,10 @@
+2.0
+Jim Driscoll (4):
+      Add an uninstaller if needed
+      Actually throw with a bad word count
+      Fix bad round count identification
+      Test for failure at 192
+
 v1.1.1
 Jim Driscoll (12):
       Synchronise copyright range
