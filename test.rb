@@ -152,6 +152,15 @@ raise "Failed to encrypt properly at k=192/b=128, produced: #{ct}" unless ct == 
 
 puts "Passed"
 
+puts "Testing 256-bit key bug"
+
+c = JdCrypt::AES.new(["DBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDB"].pack("H*"))
+ct = c.encrypt(["00000000000000000000000000000000"].pack("H*")).unpack1("H*")
+
+raise "Failed to encrypt properly at k=256/b=128, produced: #{ct}" unless ct == "9c870936256fa986e01620b8e354827f"
+
+puts "Passed"
+
 sample_long =
   "This is some text that, well, basically exists only for the purpose of being long, \
   thus forcing the usage of a block mode.\n"
