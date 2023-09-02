@@ -143,11 +143,14 @@ rescue RuntimeError
   puts "Success"
 end
 
-c = JdCrypt::AES.new(["DBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDB"].pack("H*"))
+puts "Testing 192-bit key bug"
 
-unless c.encrypt(["00000000000000000000000000000000"].pack("H*")).unpack1("H*") == "8d0fb61ad510df6d8f401b8ac01f19b6"
-  raise "Failed to encrypt properly at 192k/128b"
-end
+c = JdCrypt::AES.new(["DBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDBDB"].pack("H*"))
+ct = c.encrypt(["00000000000000000000000000000000"].pack("H*")).unpack1("H*")
+
+raise "Failed to encrypt properly at k=192/b=128, produced: #{ct}" unless ct == "8d0fb61ad510df6d8f401b8ac01f19b6"
+
+puts "Passed"
 
 sample_long =
   "This is some text that, well, basically exists only for the purpose of being long, \
